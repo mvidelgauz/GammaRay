@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -109,6 +109,12 @@ void DebuggerInjector::setManualError(const QString &msg)
     mProcessError = QProcess::FailedToStart;
 }
 
+void DebuggerInjector::setManualErrorAndContinue(const QString &msg)
+{
+    mManualError = true;
+    mErrorString = msg;
+}
+
 void DebuggerInjector::processFinished()
 {
     mExitCode = m_process->exitCode();
@@ -207,7 +213,7 @@ bool DebuggerInjector::injectAndDetach(const QString &probeDll, const QString &p
     loadSymbols(probeDll.toUtf8());
     execCmd(QStringLiteral("call (void) %1()").arg(probeFunc).toUtf8());
 
-    if (qgetenv("GAMMARAY_UNITTEST") != "1") {
+    if (qEnvironmentVariableIntValue("GAMMARAY_UNITTEST") != 1) {
         execCmd("detach");
         execCmd("quit");
     } else {
@@ -230,7 +236,7 @@ void DebuggerInjector::loadSymbols(const QByteArray &library)
 void DebuggerInjector::processLog(DebuggerInjector::Orientation orientation, bool isError,
                                   const QString &text)
 {
-    if (qgetenv("GAMMARAY_UNITTEST") == "1") { // clazy:exclude=qgetenv due to Qt4 support
+    if (qEnvironmentVariableIntValue("GAMMARAY_UNITTEST") == 1) {
         const QString output = QString::fromLatin1("%1 [%2] %3: %4")
                                    .arg(orientation == DebuggerInjector::In ? "<<<" : ">>>",
                                         QString::fromLatin1(isError ? "ERROR" : "OUTPUT"), // type

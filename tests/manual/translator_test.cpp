@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Jan Dalheimer <jan.dalheimer@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 
     loadTranslation(app.applicationDirPath() + "/translation.qm",
                     QStringLiteral("App translator"));
-    loadTranslation(QLibraryInfo::location(QLibraryInfo::TranslationsPath)
+    loadTranslation(QLibraryInfo::path(QLibraryInfo::TranslationsPath)
                         + QStringLiteral("/qt_sv.qm"),
                     QStringLiteral("Qt translator"));
 

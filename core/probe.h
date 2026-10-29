@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -182,7 +182,7 @@ public:
     void registerSignalSpyCallbackSet(const SignalSpyCallbackSet &callbacks);
 
     /*! Returns the source code location @p object was created at. */
-    static SourceLocation objectCreationSourceLocation(QObject *object);
+    static SourceLocation objectCreationSourceLocation(const QObject *object);
     /*! Returns the entire stack trace for the creation of @p object. */
     static Execution::Trace objectCreationStackTrace(QObject *object);
 
@@ -197,11 +197,7 @@ public:
      * Lock this to check the validity of a QObject
      * and to access it safely afterwards.
      */
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     static QRecursiveMutex *objectLock();
-#else
-    static QMutex *objectLock();
-#endif
 
     /*!
      * Check whether @p obj is still valid.
@@ -344,17 +340,15 @@ private:
         } type;
     };
     QVector<ObjectChange> m_queuedObjectChanges;
+    // processQueuedObjectChanges() is running, which needs the entries to stay where they are
+    bool m_processingQueuedObjectChanges = false;
 
     QList<QObject *> m_pendingReparents;
     QTimer *m_queueTimer;
     QVector<QObject *> m_globalEventFilters;
     QVector<SignalSpyCallbackSet> m_signalSpyCallbacks;
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     QSignalSpyCallbackSet *m_previousSignalSpyCallbackSet;
-#else
-    SignalSpyCallbackSet m_previousSignalSpyCallbackSet;
-#endif
     Server *m_server;
 };
 }

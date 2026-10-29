@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,7 +12,6 @@
 */
 
 /*!
-    \contentspage {GammaRay User Manual}
     \previouspage {Object Inspection}
     \nextpage {Methods}
     \page gammaray-properties.html
@@ -54,7 +53,7 @@
         \li A set of non-introspectable but well-known properties of Qt classes built into GammaRay.
     \endlist
 
-    Additionally the following container types are supported, and exapanded depending on their content:
+    Additionally the following container types are supported, and expanded depending on their content:
 
     \list
         \li QSequentialIterable, which covers most sequential containers like QVector and QList.

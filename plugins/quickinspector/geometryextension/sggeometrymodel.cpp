@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -163,7 +163,6 @@ QMap<int, QVariant> SGVertexModel::itemData(const QModelIndex &index) const
 QVariant SGVertexModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal && m_geometry) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         if (section < m_geometry->attributeCount()) {
             switch (m_geometry->attributes()[section].attributeType) {
             case QSGGeometry::UnknownAttribute:
@@ -181,16 +180,6 @@ QVariant SGVertexModel::headerData(int section, Qt::Orientation orientation, int
                 break;
             }
         }
-#else
-        char const *const *attributeNames = m_node->material()->createShader()->attributeNames();
-
-        for (int i = 0; i <= section; i++) {
-            if (!attributeNames[i])
-                break;
-            if (i == section)
-                return attributeNames[section];
-        }
-#endif
     }
     return QAbstractItemModel::headerData(section, orientation, role);
 }

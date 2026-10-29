@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -35,8 +35,9 @@ public:
 
     ~MethodArgumentPrivate()
     {
-        if (data)
-            QMetaType::destroy(value.userType(), data);
+        if (data) {
+            value.metaType().destroy(data);
+        }
     }
 
     QVariant value;
@@ -76,7 +77,7 @@ MethodArgument::operator QGenericArgument() const
         return QGenericArgument(d->name.constData(), &d->value);
 
     if (d->value.isValid()) {
-        d->data = QMetaType::create(d->value.userType(), d->value.constData());
+        d->data = d->value.metaType().create(d->value.constData());
         Q_ASSERT(d->data);
         return QGenericArgument(d->name.constData(), d->data);
     }

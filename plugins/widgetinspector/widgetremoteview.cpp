@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -13,8 +13,6 @@
 
 #include "widgetremoteview.h"
 #include "widgetinspectorinterface.h"
-
-#include <compat/qasconst.h>
 
 #include <QPainter>
 #include <QVector2D>
@@ -70,13 +68,9 @@ void WidgetRemoteView::drawDecoration(QPainter *p)
 
         p->setPen(Qt::green);
         QLineF l(r1.center(), r2.center());
-        for (const auto &prevLine : qAsConst(lines)) {
+        for (const auto &prevLine : std::as_const(lines)) {
             QPointF pnt;
-#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
-            if (l.intersect(prevLine, &pnt) == QLineF::BoundedIntersection && pnt != l.p1() && pnt != l.p2()) {
-#else
             if (l.intersects(prevLine, &pnt) == QLineF::BoundedIntersection && pnt != l.p1() && pnt != l.p2()) {
-#endif
                 p->setPen(Qt::red);
                 break;
             }

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Milian Wolff <milian.wolff@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -14,10 +14,10 @@
 #ifndef GAMMARAY_RESOURCEBROWSER_RESOURCEFILTERMODEL_H
 #define GAMMARAY_RESOURCEBROWSER_RESOURCEFILTERMODEL_H
 
-#include <common/recursiveproxymodelbase.h>
+#include <QSortFilterProxyModel>
 
 namespace GammaRay {
-class ResourceFilterModel : public RecursiveProxyModelBase
+class ResourceFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 public:

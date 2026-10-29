@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Jan Arne Petersen <jan.petersen@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -43,13 +43,14 @@ QScxmlStateMachineDebugInterface::QScxmlStateMachineDebugInterface(QScxmlStateMa
     , m_stateMachine(stateMachine)
     , m_info(new QScxmlStateMachineInfo(stateMachine))
 {
+    // clang-format off
     connect(stateMachine, SIGNAL(runningChanged(bool)), this, SIGNAL(runningChanged(bool)));
-
-    connect(stateMachine, SIGNAL(log(QString, QString)), this, SIGNAL(logMessage(QString, QString)));
+    connect(stateMachine, SIGNAL(log(QString,QString)), this, SIGNAL(logMessage(QString,QString)));
 
     connect(m_info.data(), SIGNAL(statesEntered(QVector<QScxmlStateMachineInfo::StateId>)), this, SLOT(statesEntered(QVector<QScxmlStateMachineInfo::StateId>)));
     connect(m_info.data(), SIGNAL(statesExited(QVector<QScxmlStateMachineInfo::StateId>)), this, SLOT(statesExited(QVector<QScxmlStateMachineInfo::StateId>)));
     connect(m_info.data(), SIGNAL(transitionsTriggered(QVector<QScxmlStateMachineInfo::TransitionId>)), this, SLOT(transitionsTriggered(QVector<QScxmlStateMachineInfo::TransitionId>)));
+    // clang-format on
 }
 
 QScxmlStateMachineDebugInterface::~QScxmlStateMachineDebugInterface()
@@ -211,7 +212,7 @@ QString QScxmlStateMachineDebugInterface::transitionLabel(Transition transition)
         return QString();
     }
 
-    return QStringLiteral("%1 (%2)").arg(events.first()).arg(transition);
+    return QStringLiteral("%1 (%2)").arg(events.first()).arg(transition.m_id);
 }
 
 State QScxmlStateMachineDebugInterface::transitionSource(Transition transition) const

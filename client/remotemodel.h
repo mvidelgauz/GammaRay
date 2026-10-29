@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -20,11 +20,7 @@
 #include <common/remotemodelroles.h>
 
 #include <QAbstractItemModel>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QRegExp>
-#else
 #include <QRegularExpression>
-#endif
 #include <QSet>
 #include <QTimer>
 #include <QVector>
@@ -42,15 +38,8 @@ class GAMMARAY_CLIENT_EXPORT RemoteModel : public QAbstractItemModel
         Qt::CaseSensitivity filterCaseSensitivity READ proxyFilterCaseSensitivity WRITE setProxyFilterCaseSensitivity NOTIFY proxyFilterCaseSensitivityChanged)
     Q_PROPERTY(
         int filterKeyColumn READ proxyFilterKeyColumn WRITE setProxyFilterKeyColumn NOTIFY proxyFilterKeyColumnChanged)
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    Q_PROPERTY(
-        QRegExp filterRegExp READ proxyFilterRegExp WRITE setProxyFilterRegExp NOTIFY proxyFilterRegExpChanged)
-    using RegExpT = QRegExp;
-#else
     Q_PROPERTY(
         QRegularExpression filterRegularExpression READ proxyFilterRegExp WRITE setProxyFilterRegExp NOTIFY proxyFilterRegExpChanged)
-    using RegExpT = QRegularExpression;
-#endif
 
 public:
     explicit RemoteModel(const QString &serverObject, QObject *parent = nullptr);
@@ -109,9 +98,11 @@ private:
         std::vector<RemoteModelNodeState::NodeStates> state; // column -> state (cache outdated, waiting for data, etc)
 
         int rowHint = -1; // for internal use by modelIndexForNode
+        bool requestAgain = false; // a data request of this row got lost, see resetLoadingState
     };
 
     void clear();
+    void resetOutOfSync(Protocol::MessageType type);
     void connectToServer();
 
     bool checkSyncBarrier(const Message &msg);
@@ -132,6 +123,9 @@ private:
     /// This is needed when rows have been added or removed before @p startRow, since
     /// pending replies might have a wrong index.
     void resetLoadingState(Node *node, int startRow) const;
+    void requestAgain(Node *node) const;
+    static int loadingCount(const Node *node);
+    static int loadingCountOfChildren(const Node *node);
 
     QVariant requestCreationDeclarationLocation(const QModelIndex &, int role) const;
 
@@ -155,8 +149,8 @@ private:
     void setProxyFilterCaseSensitivity(Qt::CaseSensitivity caseSensitivity);
     int proxyFilterKeyColumn() const;
     void setProxyFilterKeyColumn(int column);
-    RegExpT proxyFilterRegExp() const;
-    void setProxyFilterRegExp(const RegExpT &regExp);
+    QRegularExpression proxyFilterRegExp() const;
+    void setProxyFilterRegExp(const QRegularExpression &regExp);
 
 private slots:
     void doRequests() const;
@@ -174,6 +168,9 @@ private:
     };
 
     mutable QMap<RequestType, QVector<Protocol::ModelIndex>> m_pendingRequests;
+    mutable bool m_requestAgain = false;
+    // cells and row counts that wait for a reply, there is nothing to reset when there are none
+    mutable int m_loadingCount = 0;
     QTimer *m_pendingRequestsTimer;
 
     QString m_serverObject;
@@ -189,10 +186,11 @@ private:
     bool m_proxyDynamicSortFilter;
     Qt::CaseSensitivity m_proxyCaseSensitivity;
     int m_proxyKeyColumn;
-    RegExpT m_proxyFilterRegExp;
+    QRegularExpression m_proxyFilterRegExp;
 
     // hooks for unit tests
     static void (*s_registerClientCallback)();
+    static bool s_assertInSync;
     void registerClient(const QString &serverObject);
     virtual void sendMessage(const Message &msg) const;
     friend class FakeRemoteModel;

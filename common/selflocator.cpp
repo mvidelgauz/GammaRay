@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -45,7 +45,7 @@ static QString findMeInternal()
     if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                            reinterpret_cast<LPWSTR>(&SelfLocator::findMe), &handle)) {
         GetModuleFileNameW(handle, path, sizeof(path));
-        return QDir::fromNativeSeparators(QString::fromUtf16(reinterpret_cast<const ushort *>(path)));
+        return QDir::fromNativeSeparators(QString::fromUtf16(reinterpret_cast<const char16_t *>(path)));
     }
     return QString();
 }

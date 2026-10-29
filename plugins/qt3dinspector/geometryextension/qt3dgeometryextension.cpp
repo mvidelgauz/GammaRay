@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -16,18 +16,10 @@
 #include <core/propertycontroller.h>
 #include <core/util.h>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QBuffer>
 #include <Qt3DCore/QGeometry>
 namespace Qt3DGeometry = Qt3DCore;
-#else
-#include <Qt3DRender/QAttribute>
-#include <Qt3DRender/QBuffer>
-#include <Qt3DRender/QBufferDataGenerator>
-#include <Qt3DRender/QGeometry>
-namespace Qt3DGeometry = Qt3DRender;
-#endif
 
 #include <Qt3DRender/QGeometryRenderer>
 #include <Qt3DCore/QEntity>
@@ -106,18 +98,7 @@ void Qt3DGeometryExtension::updateGeometryData()
         } else {
             Qt3DGeometryBufferData buffer;
             buffer.name = Util::displayString(attr->buffer());
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
             buffer.data = attr->buffer()->data();
-#else
-#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-            buffer.type = attr->buffer()->type();
-#endif // QT_VERSION_CHECK(5, 10, 0)
-            auto generator = attr->buffer()->dataGenerator();
-            if (generator)
-                buffer.data = (*generator.data())();
-            else
-                buffer.data = attr->buffer()->data();
-#endif
 
             attrData.bufferIndex = data.buffers.size();
             bufferMap.insert(attr->buffer(), attrData.bufferIndex);

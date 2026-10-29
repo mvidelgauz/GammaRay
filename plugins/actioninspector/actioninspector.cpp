@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -101,14 +101,7 @@ void ActionInspector::registerMetaTypes()
     MO_ADD_PROPERTY_RO(QAction, actionGroup);
     MO_ADD_PROPERTY(QAction, data, setData);
     MO_ADD_PROPERTY(QAction, isSeparator, setSeparator);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    MO_ADD_PROPERTY_RO(QAction, menu);
-    MO_ADD_PROPERTY_RO(QAction, parentWidget);
-    MO_ADD_PROPERTY_RO(QAction, associatedGraphicsWidgets);
-    MO_ADD_PROPERTY_RO(QAction, associatedWidgets);
-#else
     MO_ADD_PROPERTY_RO(QAction, associatedObjects);
-#endif
 
     MO_ADD_METAOBJECT1(QActionGroup, QObject);
     MO_ADD_PROPERTY_RO(QActionGroup, actions);

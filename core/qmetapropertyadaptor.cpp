@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -44,7 +44,8 @@ void QMetaPropertyAdaptor::doSetObject(const ObjectInstance &oi)
         const QMetaProperty prop = mo->property(i);
         if (!PropertyFilters::matches(propertyMetaData(i))) {
             if (oi.type() == ObjectInstance::QtObject && oi.qtObject() && prop.hasNotifySignal()) {
-                connect(oi.qtObject(), QByteArray("2") + prop.notifySignal().methodSignature(), this, SLOT(propertyUpdated()));
+                const QByteArray sig = QByteArray("2") + prop.notifySignal().methodSignature();
+                connect(oi.qtObject(), sig, this, SLOT(propertyUpdated()));
                 m_notifyToRowMap.insert(prop.notifySignalIndex(), m_rowToPropertyIndex.size());
             }
             m_rowToPropertyIndex.push_back(i);
@@ -57,7 +58,7 @@ int QMetaPropertyAdaptor::count() const
     if (!object().isValid())
         return 0;
 
-    return m_rowToPropertyIndex.count();
+    return m_rowToPropertyIndex.size();
 }
 
 PropertyData QMetaPropertyAdaptor::propertyMetaData(int propertyIndex) const
@@ -82,33 +83,17 @@ PropertyData QMetaPropertyAdaptor::propertyMetaData(int propertyIndex) const
     PropertyModel::PropertyFlags f(PropertyModel::None);
     if (prop.isConstant())
         f |= PropertyModel::Constant;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     if (prop.isDesignable())
-#else
-    if (prop.isDesignable(object().qtObject()))
-#endif
         f |= PropertyModel::Designable;
     if (prop.isFinal())
         f |= PropertyModel::Final;
     if (prop.isResettable())
         f |= PropertyModel::Resetable;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     if (prop.isScriptable())
-#else
-    if (prop.isScriptable(object().qtObject()))
-#endif
         f |= PropertyModel::Scriptable;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     if (prop.isStored())
-#else
-    if (prop.isStored(object().qtObject()))
-#endif
         f |= PropertyModel::Stored;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     if (prop.isUser())
-#else
-    if (prop.isUser(object().qtObject()))
-#endif
         f |= PropertyModel::User;
     if (prop.isWritable())
         f |= PropertyModel::Writable;

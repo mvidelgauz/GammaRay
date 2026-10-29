@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -16,8 +16,6 @@
 #include "common/endpoint.h"
 #include "common/objectbroker.h"
 #include "common/propertycontrollerinterface.h"
-
-#include <compat/qasconst.h>
 
 #include <QCoreApplication>
 #include <QTimer>
@@ -84,7 +82,7 @@ void PropertyWidget::registerTab(PropertyWidgetTabFactoryBase *factory)
     if (s_tabFactories.isEmpty())
         qAddPostRoutine(propertyWidgetCleanup);
     s_tabFactories.push_back(factory);
-    for (PropertyWidget *widget : qAsConst(s_propertyWidgets))
+    for (PropertyWidget *widget : std::as_const(s_propertyWidgets))
         widget->updateShownTabs();
 }
 
@@ -97,7 +95,7 @@ void PropertyWidget::createWidgets()
 {
     if (m_objectBaseName.isEmpty())
         return;
-    for (PropertyWidgetTabFactoryBase *factory : qAsConst(s_tabFactories)) {
+    for (PropertyWidgetTabFactoryBase *factory : std::as_const(s_tabFactories)) {
         if (!factoryInUse(factory) && extensionAvailable(factory)) {
             const PageInfo pi = { factory, factory->createWidget(this) };
             m_pages.push_back(pi);
@@ -123,7 +121,7 @@ void PropertyWidget::updateShownTabs()
     auto prevSelectedWidget = currentWidget();
 
     int tabIt = 0;
-    for (const auto &page : qAsConst(m_pages)) {
+    for (const auto &page : std::as_const(m_pages)) {
         const int index = indexOf(page.widget);
         if (extensionAvailable(page.factory)) {
             if (index != tabIt)

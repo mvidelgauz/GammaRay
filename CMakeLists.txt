@@ -1,6 +1,6 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -12,7 +12,7 @@
 # Pass the following variables to cmake to control the build:
 # (See INSTALL.md for more information)
 #
-# -DQT_VERSION_MAJOR=[5|6]
+# -DQT_VERSION_MAJOR=6
 #  Build against QtX version
 #  Default=(The first Qt version found by cmake or the one provided by CMAKE_PREFIX_PATH will be used)
 #
@@ -64,16 +64,27 @@
 #  Enable Precompiled Headers support
 #  Default=false
 #
+# -DGAMMARAY_WITH_KDSME=[true|false]
+#  Enable State Machine Viewer Plugin UI by requiring KDAB State Machine Editor
+#  Default=false
+#
 # -DENABLE_GOLD_LINKER=[true|false]
 #  Use GNU gold linker
 #  Default=false
 #
+# -DWARNINGS_ARE_ERRORS=[true|false]
+#  Enables -Werror
+#  Default = false
+#
 
 cmake_minimum_required(VERSION 3.16.0)
 
+file(STRINGS version.txt GAMMARAY_VERSION_FILE)
+list(GET GAMMARAY_VERSION_FILE 0 GammaRay_VERSION)
+
 project(
     GammaRay
-    VERSION 3.0.0
+    VERSION ${GammaRay_VERSION}
     LANGUAGES CXX C
 )
 
@@ -87,8 +98,9 @@ set(CMAKE_AUTOMOC TRUE)
 set(CMAKE_AUTOUIC TRUE)
 set(CMAKE_AUTORCC TRUE)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_LINK_DEPENDS_NO_SHARED ON)
 
 if(NOT DEFINED CMAKE_SKIP_BUILD_RPATH)
     set(CMAKE_SKIP_BUILD_RPATH ON)
@@ -184,8 +196,8 @@ set(GAMMARAY_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(GAMMARAY_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(GAMMARAY_VERSION ${PROJECT_VERSION})
 set(GAMMARAY_VERSION_STRING "${GAMMARAY_VERSION}")
-set(GAMMARAY_SOVERSION "3.0.0")
-set(GAMMARAY_PLUGIN_VERSION "3.0")
+set(GAMMARAY_SOVERSION "${GAMMARAY_VERSION_MAJOR}.${GAMMARAY_VERSION_MINOR}.${GAMMARAY_VERSION_PATCH}")
+set(GAMMARAY_PLUGIN_VERSION "${GAMMARAY_VERSION_MAJOR}.${GAMMARAY_VERSION_MINOR}")
 set(PROJECT_VERSION_STRING "${GAMMARAY_VERSION_STRING}")
 if(ANDROID)
     # non-rooted Android doesn't like .so versions and requires the lib prefix
@@ -236,6 +248,10 @@ if(GAMMARAY_CLIENT_ONLY_BUILD)
     set(GAMMARAY_BUILD_UI_DEFAULT ON)
 endif()
 
+if(GAMMARAY_PROBE_ONLY_BUILD)
+    set(GAMMARAY_BUILD_UI_DEFAULT OFF)
+endif()
+
 gammaray_option(GAMMARAY_BUILD_UI "Build the GammaRay client and in-process UI." ${GAMMARAY_BUILD_UI_DEFAULT})
 
 if(GAMMARAY_PROBE_ONLY_BUILD AND GAMMARAY_CLIENT_ONLY_BUILD)
@@ -245,6 +261,7 @@ endif()
 gammaray_option(GAMMARAY_INSTALL_QT_LAYOUT "Install into Qt directory layout." OFF)
 gammaray_option(GAMMARAY_MULTI_BUILD "Build multiple applicable probe configurations." ON)
 gammaray_option(GAMMARAY_BUILD_CLI_INJECTOR "Build command line injector on Windows." ON)
+gammaray_option(GAMMARAY_WITH_KDSME "Enable State Machine UI with KDSME" OFF)
 
 set(GAMMARAY_BUILD_DOCS_DEFAULT ON)
 set(GAMMARAY_DISABLE_FEEDBACK_DEFAULT OFF)
@@ -258,6 +275,8 @@ gammaray_option(GAMMARAY_STATIC_PROBE "Build the probe as static library for com
 gammaray_option(GAMMARAY_ENFORCE_QT_ASSERTS "Force QT_ASSERT in all builds." OFF)
 
 gammaray_option(GAMMARAY_DISABLE_FEEDBACK "Disable user feedback support." ${GAMMARAY_DISABLE_FEEDBACK_DEFAULT})
+
+gammaray_option(WARNINGS_ARE_ERRORS "Enables -Werror" OFF)
 
 #
 # Static probe setup
@@ -288,6 +307,7 @@ if(GAMMARAY_USE_PCH)
         PROPERTIES PRECOMPILE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/core/pch.h
                    CXX_VISIBILITY_PRESET hidden
                    VISIBILITY_INLINES_HIDDEN ON
+                   POSITION_INDEPENDENT_CODE ON
     )
 endif()
 
@@ -333,7 +353,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # -Wgnu-zero-variadic-macro-arguments (part of -pedantic) is triggered by every qCDebug()
         # call and therefore results in a lot of noise. This warning is only notifying us that clang
         # is emulating the GCC behaviour instead of the exact standard wording so we can safely ignore it
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-gnu-zero-variadic-macro-arguments")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-c++20-extensions")
     endif()
     if(HAVE_GXX_GNUXX11) # QNX needs gnu++0x rather than c++0x for compiling QML V4 private headers
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
@@ -365,10 +385,6 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-") #use strict C++ compliance
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244") #conversion from __int64 to int possible loss of data
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4267") #conversion from size_t to int possible loss of data
-endif()
-
-if(WIN32)
-    add_definitions(-DUNICODE -D_UNICODE -D_USING_V110_SDK71_=1)
 endif()
 
 if(QNXNTO)
@@ -414,27 +430,17 @@ if(GAMMARAY_ENFORCE_QT_ASSERTS)
     add_definitions(-DQT_FORCE_ASSERTS)
 endif()
 
-if(GAMMARAY_QT6_BUILD) #to support the "old-way" of specifying a Qt6 build
-    set(QT_VERSION_MAJOR 6)
-endif()
 if(NOT DEFINED QT_VERSION_MAJOR)
-    #
-    # Finding Qt
-    #
-    find_package(
-        QT
-        5.5
-        NAMES
-        Qt6
-        Qt5
-        COMPONENTS Core NO_MODULE
-        REQUIRED
-    )
+    set(QT_VERSION_MAJOR 6)
 endif()
 
 set_package_properties(Qt${QT_VERSION_MAJOR}Core PROPERTIES TYPE REQUIRED)
 
 find_package(Qt${QT_VERSION_MAJOR} NO_MODULE REQUIRED COMPONENTS Gui Network)
+if(QT_VERSION_MAJOR EQUAL 6 AND Qt${QT_VERSION_MAJOR}Core_VERSION_MINOR LESS 5)
+    message(FATAL_ERROR "Sorry, Qt6 less than version 6.5 is not supported since GammaRay 3.3")
+endif()
+
 find_package(
     Qt${QT_VERSION_MAJOR} NO_MODULE QUIET
     OPTIONAL_COMPONENTS
@@ -454,79 +460,67 @@ find_package(
         Quick
         QuickWidgets
         Svg
-        Script
-        ScriptTools
         Test
         WebEngineWidgets
         Widgets
         WaylandCompositor
 )
+
 if(ANDROID)
     find_package(Qt${QT_VERSION_MAJOR} NO_MODULE REQUIRED COMPONENTS AndroidExtras)
 endif()
 
 # Find these 'exotic' Qt modules without using find_package(... COMPONENTS)
 # so we can retrieve those packages even when installed into a different prefix
-find_package(Qt${QT_VERSION_MAJOR}IviCore 1.1 NO_MODULE QUIET) # 1.1 is based on 5.8
-find_package(Qt${QT_VERSION_MAJOR}IviVehicleFunctions 1.1 NO_MODULE QUIET)
-find_package(Qt${QT_VERSION_MAJOR}IviMedia 1.1 NO_MODULE QUIET)
-find_package(Qt${QT_VERSION_MAJOR}Scxml 5.8 NO_MODULE QUIET)
+find_package(
+    Qt${QT_VERSION_MAJOR}Scxml
+    ${Qt${QT_VERSION_MAJOR}_VERSION}
+    EXACT
+    NO_MODULE
+    QUIET
+)
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    find_package(
+        Qt${QT_VERSION_MAJOR}StateMachine
+        ${Qt${QT_VERSION_MAJOR}_VERSION}
+        EXACT
+        NO_MODULE
+        QUIET
+    )
+endif()
 
 # if translation/doc host tools are missing, the Qt5 cmake config files throw errors...
 if(GAMMARAY_BUILD_DOCS)
     find_package(Qt${QT_VERSION_MAJOR} NO_MODULE QUIET OPTIONAL_COMPONENTS Help LinguistTools)
 endif()
 
-if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-    if(MSVC)
-        add_compile_options(/Zc:__cplusplus)
-    endif()
-    if(MINGW)
-        # prevent 'file too big' and 'too many sections' errors with Qt6
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
-    endif()
+if(MSVC)
+    add_compile_options(/Zc:__cplusplus)
+endif()
+if(MINGW)
+    # prevent 'file too big' and 'too many sections' errors with Qt6
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
+endif()
+if(Qt6Gui_VERSION VERSION_GREATER_EQUAL "6.10.0")
+    set(QT_NO_PRIVATE_MODULE_WARNING ON)
+    find_package(Qt6WidgetsPrivate REQUIRED NO_MODULE)
+    find_package(Qt6QmlPrivate NO_MODULE)
+    find_package(Qt6QuickPrivate NO_MODULE)
 endif()
 
 # these need to included after the last Qt-related find_package() call
-include(Qt5LegacySupport)
 include(ECMQt5ToQt6Porting)
 
-set(MACOS_DISABLE_UNSUPPORTED_TESTS FALSE)
 if(APPLE)
     cmake_host_system_information(RESULT MACOS_RELEASE QUERY OS_RELEASE)
     message(STATUS "MACOS_RELEASE: ${MACOS_RELEASE}")
     message(STATUS "QtQuick_VERSION: ${QtQuick_VERSION}")
-    if(MACOS_RELEASE VERSION_GREATER_EQUAL 10.15.0 AND QtQuick_VERSION VERSION_LESS 5.12.0)
-        # Qt Quick is only supported on macOS Catalina using Qt 5.12 and above
-        set(MACOS_DISABLE_UNSUPPORTED_TESTS TRUE)
-        message(WARNING "Your version of MacOS is too old (less then 10.15) to use with QtQuick 5.12 or higher. "
-                        "You can solve this by upgrading your MacOS or using older Qt versions. "
-                        "Disabling QtQuick capabilities."
-        )
-    endif()
 endif()
 
-if(MACOS_DISABLE_UNSUPPORTED_TESTS)
-    set(Qt5Quick_FOUND FALSE)
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND Qt5Core_VERSION VERSION_EQUAL 5.9.1)
-    # hide -Wc++1z-extensions warnings in this Qt version -- see: https://bugreports.qt.io/browse/QTBUG-61840
-    add_flag_if_supported(-Wno-c++1z-extensions NO_CPP1Z_EXTENSIONS)
-endif()
-if(QtCore_VERSION VERSION_GREATER 5.7)
-    # Qt 5.8 is the first minor version to use nullptr more broadly
-    # With versions below Qt might lots of warnings for -Wzero-as-null-pointer-constant, e.g.:
-    #   .../examples/widget-layouting/ui_contactform.h:606:85:
-    #   warning: zero as null pointer constant [-Wzero-as-null-pointer-constant]
-    add_flag_if_supported(-Wzero-as-null-pointer-constant ZERO_AS_NULL_POINTER_CONSTANT)
-endif()
+add_flag_if_supported(-Wzero-as-null-pointer-constant ZERO_AS_NULL_POINTER_CONSTANT)
 
 if(GAMMARAY_BUILD_UI) # widgets are required for the UI
-    find_package(Qt${QtCore_VERSION_MAJOR} NO_MODULE REQUIRED COMPONENTS Widgets)
+    find_package(Qt${QT_VERSION_MAJOR} NO_MODULE REQUIRED COMPONENTS Widgets)
 endif()
 
 set(HAVE_QT_CONCURRENT ${QtConcurrent_FOUND})
@@ -535,14 +529,14 @@ set(HAVE_QT_SVG ${QtSvg_FOUND})
 set(HAVE_QT_SCXML ${QtScxml_FOUND})
 set(HAVE_QT_DESIGNER ${QtDesigner_FOUND})
 
-if(TARGET Qt::Gui)
+if(TARGET Qt${QtGui_VERSION_MAJOR}::Gui)
     cmake_push_check_state()
-    set(CMAKE_REQUIRED_LIBRARIES Qt::Gui)
+    set(CMAKE_REQUIRED_LIBRARIES Qt${QtGui_VERSION_MAJOR}::Gui)
     check_cxx_symbol_exists(QT_NO_OPENGL "QOpenGLContext" QT_NO_OPENGL)
     cmake_pop_check_state()
 endif()
 
-add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x050500)
+add_definitions(-DQT_DISABLE_DEPRECATED_BEFORE=0x060500)
 #add_definitions(-DQT_DEPRECATED_WARNINGS)
 
 if(NOT DEFINED QT_LIBINFIX)
@@ -577,6 +571,7 @@ endif()
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" UPPERCASE_CMAKE_BUILD_TYPE)
 
+set(GAMMARAY_PROBE_ABI_POSTFIX "")
 if(NOT UPPERCASE_CMAKE_BUILD_TYPE MATCHES "^REL")
     set(GAMMARAY_PROBE_ABI_POSTFIX "${CMAKE_DEBUG_POSTFIX}")
 endif()
@@ -602,7 +597,6 @@ else()
     set(GAMMARAY_CORE_ONLY_LAUNCHER TRUE)
 endif()
 
-add_feature_info("QtScript debugger" Qt5ScriptTools_FOUND "Requires QtScript and QtScriptTools.")
 add_feature_info("Widget .ui file export" HAVE_QT_DESIGNER "Requires QtDesigner library.")
 
 #
@@ -629,7 +623,7 @@ set_package_properties(
     PURPOSE "Validate QML code."
 )
 
-find_package(KF${QtCore_VERSION_MAJOR}SyntaxHighlighting 5.28 NO_MODULE QUIET)
+find_package(KF${QtCore_VERSION_MAJOR}SyntaxHighlighting 6.0 NO_MODULE QUIET)
 set_package_properties(
     KF${QtCore_VERSION_MAJOR}SyntaxHighlighting PROPERTIES
     TYPE RECOMMENDED
@@ -802,7 +796,32 @@ include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/3rdparty ${CMAKE_BIN
 
 include(KDQtInstallPaths) #to set QT_INSTALL_FOO variables
 add_subdirectory(cmake)
-add_subdirectory(3rdparty/kde)
+add_subdirectory(3rdparty)
+
+# Enable WARNINGS_ARE_ERRORS AFTER 3rdparty modules
+if(WARNINGS_ARE_ERRORS)
+    if(NOT MSVC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
+
+        if(CMAKE_COMPILER_IS_GNUCXX)
+            # each compiler has its own opinion on when to apply [noreturn]
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=suggest-attribute=noreturn")
+
+            if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
+                # QTBUG-135486
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=array-bounds")
+            endif()
+        endif()
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+        add_definitions(-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
+    endif()
+endif()
+
+if(WIN32)
+    add_definitions(-DUNICODE -D_UNICODE -D_USING_V110_SDK71_=1)
+endif()
+
 add_subdirectory(common)
 add_subdirectory(core)
 add_subdirectory(probe)
@@ -934,16 +953,17 @@ set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
 set(CPACK_DEBIAN_PACKAGE_SECTION "Development")
 
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/${README_FILE}")
+set(ICONS_DIR "${CMAKE_SOURCE_DIR}/ui/resources/gammaray")
 if(WIN32)
-    set(ICONS_DIR "${CMAKE_SOURCE_DIR}/resources")
     set(CPACK_GENERATOR "NSIS" "ZIP")
     set(CPACK_PACKAGE_EXECUTABLES "GammaRay" "GammaRay")
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "GammaRay")
     set(CPACK_PACKAGE_FILE_NAME "GammaRay ${GAMMARAY_VERSION}")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/${LICENSE_FILE}")
     set(CPACK_NSIS_EXECUTABLES_DIRECTORY "${BIN_INSTALL_DIR}")
+    set(CPACK_NSIS_MANIFEST_DPI_AWARE TRUE)
     set(CPACK_NSIS_MUI_ICON "${ICONS_DIR}/GammaRay.ico")
-    #set(CPACK_PACKAGE_ICON "${ICONS_DIR}\\\\CharmNSISHeader.bmp")
+    #set(CPACK_PACKAGE_ICON "${ICONS_DIR}/TODO.bmp")
     set(CPACK_NSIS_URL_INFO_ABOUT "https://www.kdab.com/")
     set(CPACK_NSIS_INSTALLED_ICON_NAME "GammaRay${CMAKE_EXECUTABLE_SUFFIX}")
     set(CPACK_NSIS_MENU_LINKS "${LICENSE_FILE}" "License" "${README_FILE}" "Readme")
@@ -954,9 +974,9 @@ elseif(APPLE)
     set(CPACK_DMG_VOLUME_NAME "GammaRay")
     set(CPACK_SYSTEM_NAME "OSX")
     set(CPACK_PACKAGE_FILE_NAME "GammaRay-${GAMMARAY_VERSION}")
-    set(CPACK_PACKAGE_ICON "${ICONS_DIR}/CharmDMG.icns")
-    set(CPACK_DMG_DS_STORE "${ICONS_DIR}/CharmDSStore")
-    set(CPACK_DMG_BACKGROUND_IMAGE "${ICONS_DIR}/CharmDMGBackground.png")
+    set(CPACK_PACKAGE_ICON "${ICONS_DIR}/GammaRay.icns")
+    # set(CPACK_DMG_DS_STORE "${ICONS_DIR}/TODO_DSStore")
+    # set(CPACK_DMG_BACKGROUND_IMAGE "${ICONS_DIR}/TODO_DMGBackground.png")
 elseif(UNIX)
     set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 endif()

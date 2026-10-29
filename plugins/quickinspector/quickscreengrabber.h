@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -94,6 +94,9 @@ public:
     QVector<QuickItemGeometry> itemsGeometry;
 };
 
+/**
+ * @brief Base for all screen grabbers that decorate and return a pixmap for the window.
+ */
 class AbstractScreenGrabber : public QObject
 {
     Q_OBJECT
@@ -104,7 +107,6 @@ public:
         enum GraphicsApi
         {
             Unknown = 0,
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             Software,
             OpenVG,
             OpenGL,
@@ -112,11 +114,6 @@ public:
             Vulkan,
             Metal,
             Null,
-#else
-            Software,
-            OpenGL,
-            Direct3D12
-#endif
         };
 
         RenderInfo()
@@ -133,7 +130,13 @@ public:
     explicit AbstractScreenGrabber(QQuickWindow *window);
     ~AbstractScreenGrabber() override;
 
+    /**
+     * @return The graphics API used to render @p window.
+     */
     static RenderInfo::GraphicsApi graphicsApiFor(QQuickWindow *window);
+    /**
+     * @return Screen grabber compatible with the given @p window.
+     */
     static std::unique_ptr<AbstractScreenGrabber> get(QQuickWindow *window);
 
     QQuickWindow *window() const;
@@ -162,10 +165,14 @@ protected:
     void doDrawDecorations(QPainter &painter);
     void gatherRenderInfo();
 
+    /**
+     * @brief Draw decorations on the target window.
+     */
     virtual void drawDecorations() = 0;
 
     virtual void updateOverlay();
     static QuickItemGeometry initFromItem(QQuickItem *item);
+    bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
     void itemParentChanged(QQuickItem *parent);
@@ -207,7 +214,9 @@ private:
 };
 #endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
+/**
+ * @brief Screen grabber meant for software rendering.
+ */
 class SoftwareScreenGrabber : public AbstractScreenGrabber
 {
     Q_OBJECT
@@ -228,9 +237,10 @@ private:
     bool m_isGrabbing = false;
     QPointF m_lastItemPosition;
 };
-#endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+/**
+ * @brief Screen grabber used for unsupported rendering backends. Doesn't do anything useful otherwise.
+ */
 class UnsupportedScreenGrabber : public AbstractScreenGrabber
 {
     Q_OBJECT
@@ -246,7 +256,6 @@ private:
 
     QPointF m_lastItemPosition;
 };
-#endif
 
 }
 

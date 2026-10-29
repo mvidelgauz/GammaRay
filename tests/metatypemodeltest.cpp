@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -21,8 +21,7 @@
 
 #include <common/objectid.h>
 
-#include <3rdparty/qt/modeltest.h>
-
+#include <QAbstractItemModelTester>
 #include <QDebug>
 #include <QObject>
 #include <QSignalSpy>
@@ -41,7 +40,7 @@ private slots:
         MetaTypesModel srcModel;
         MetaTypesClientModel model;
         model.setSourceModel(&srcModel);
-        ModelTest modelTest(&model);
+        QAbstractItemModelTester modelTest(&model);
         QVERIFY(model.rowCount() > 0);
         QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
         QVERIFY(resetSpy.isValid());

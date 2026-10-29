@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -15,8 +15,6 @@
 
 #include "translator.h"
 #include "paths.h"
-
-#include <compat/qasconst.h>
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -34,7 +32,7 @@ static QString rootTranslationsPath()
 
 static QString qtTranslationsPath()
 {
-    return QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+    return QLibraryInfo::path(QLibraryInfo::TranslationsPath);
 }
 
 void Translator::loadTranslations(const QString &catalog, const QString &path, const QString &overrideLanguage)
@@ -45,7 +43,7 @@ void Translator::loadTranslations(const QString &catalog, const QString &path, c
     if (!overrideLanguage.isEmpty())
         names.prepend(overrideLanguage);
 
-    for (const QString &name : qAsConst(names)) {
+    for (const QString &name : std::as_const(names)) {
         const QLocale uiLocale(name);
         auto translator = new QTranslator(QCoreApplication::instance());
         if (translator->load(uiLocale, catalog, QStringLiteral("_"), path)) {

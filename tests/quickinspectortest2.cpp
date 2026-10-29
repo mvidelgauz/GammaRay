@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -19,8 +19,7 @@
 #include <common/remoteviewinterface.h>
 #include <common/remoteviewframe.h>
 
-#include <3rdparty/qt/modeltest.h>
-
+#include <QAbstractItemModelTester>
 #include <QItemSelectionModel>
 #include <QQuickItem>
 
@@ -48,11 +47,11 @@ private slots:
 
         itemModel = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.QuickItemModel"));
         QVERIFY(itemModel);
-        new ModelTest(itemModel, view());
+        new QAbstractItemModelTester(itemModel, view());
 
         sgModel = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.QuickSceneGraphModel"));
         QVERIFY(sgModel);
-        new ModelTest(sgModel, view());
+        new QAbstractItemModelTester(sgModel, view());
 
         inspector = ObjectBroker::object<QuickInspectorInterface *>();
         QVERIFY(inspector);
@@ -107,8 +106,8 @@ private slots:
             remoteView->setViewActive(true);
             // Activating the view trigger an update request
             QVERIFY(waitForSignal(&updatedSpy, true));
-            QVERIFY(requestedSpy.count() == 1 || requestedSpy.count() == 2); // should be 1, but we might see spurious repaints on windows
-            QVERIFY(updatedSpy.count() == 1 || updatedSpy.count() == 2);
+            QVERIFY(requestedSpy.size() == 1 || requestedSpy.size() == 2); // should be 1, but we might see spurious repaints on windows
+            QVERIFY(updatedSpy.size() == 1 || updatedSpy.size() == 2);
             if (!clientIsReplying)
                 remoteView->clientViewUpdated();
 
@@ -130,8 +129,8 @@ private slots:
                 }
 
                 QVERIFY(waitForSignal(&requestedSpy, true));
-                QVERIFY(requestedSpy.count() == 1 || requestedSpy.count() == 2);
-                QVERIFY(updatedSpy.count() == 1 || updatedSpy.count() == 2);
+                QVERIFY(requestedSpy.size() == 1 || requestedSpy.size() == 2);
+                QVERIFY(updatedSpy.size() == 1 || updatedSpy.size() == 2);
             } else {
                 // The client is not answering with clientViewUpdated automatically.
                 // Only 1 request and 1 frame sent should trigger.
@@ -142,8 +141,8 @@ private slots:
                     QVERIFY(waitForSignal(&updatedSpy, true));
                 }
 
-                QVERIFY(requestedSpy.count() == 1 || requestedSpy.count() == 2);
-                QVERIFY(updatedSpy.count() == 1 || updatedSpy.count() == 2);
+                QVERIFY(requestedSpy.size() == 1 || requestedSpy.size() == 2);
+                QVERIFY(updatedSpy.size() == 1 || updatedSpy.size() == 2);
             }
 
             requestedSpy.clear();
@@ -166,8 +165,8 @@ private slots:
             remoteView->setViewActive(true);
             // Activating the view trigger an update request
             QVERIFY(waitForSignal(&updatedSpy, true));
-            QCOMPARE(requestedSpy.count(), 1);
-            QCOMPARE(updatedSpy.count(), 1);
+            QCOMPARE(requestedSpy.size(), 1);
+            QCOMPARE(updatedSpy.size(), 1);
             if (!clientIsReplying)
                 remoteView->clientViewUpdated();
 
@@ -183,9 +182,9 @@ private slots:
             rootItem->setProperty("animated", false);
             QTest::qWait(qRound(animationDuration));
 
-            QVERIFY(requestedSpy.count() <= qRound(maxPossibleThrottledRequests * 1.05) + 1);
-            QVERIFY(updatedSpy.count() <= qRound(maxPossibleThrottledRequests * 1.05) + 1);
-            QCOMPARE(requestedSpy.count(), updatedSpy.count());
+            QVERIFY(requestedSpy.size() <= qRound(maxPossibleThrottledRequests * 1.05) + 1);
+            QVERIFY(updatedSpy.size() <= qRound(maxPossibleThrottledRequests * 1.05) + 1);
+            QCOMPARE(requestedSpy.size(), updatedSpy.size());
 
             requestedSpy.clear();
             updatedSpy.clear();

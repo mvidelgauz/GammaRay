@@ -2,7 +2,7 @@
 
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 # Author: ivan tkachenko <me@ratijas.tk>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
@@ -69,6 +69,7 @@ function _gammaray-host-port() {
 _arguments \
   '(* -)--list-probes[list all installed probes]' \
   '--probe[specify which probe to use]:abi:_gammaray-probe' \
+  '--detect-abi[print the detected ABI of the target and the probe to use, and exit]' \
   '(-i --injector)'{-i,--injector}'[set injection type]:injector:_gammaray-injector' \
   '--self-test[run self tests, of everything or the specified injector]::injector:_gammaray-injector' \
   '(-o --injector-override)'{-o,--injector-override}'[Override the injector executable if handled (requires -i/--injector)]:executable: _command_names -e' \

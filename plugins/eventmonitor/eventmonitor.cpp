@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Tim Henning <tim.henning@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -34,8 +34,16 @@
 #include <QMutex>
 #include <QSortFilterProxyModel>
 #include <QtCore/private/qobject_p.h>
+#include <QtGui/qtgui-config.h>
 
 using namespace GammaRay;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 11, 0)
+struct MetaCallEventCopy : public QMetaCallEvent
+{
+    using QMetaCallEvent::d;
+};
+#endif
 
 static EventModel *s_model = nullptr;
 static EventTypeModel *s_eventTypeModel = nullptr;
@@ -62,12 +70,14 @@ static QString eventTypeToClassName(QEvent::Type type)
         return QStringLiteral("QScrollPrepareEvent");
     case QEvent::Scroll:
         return QStringLiteral("QScrollEvent");
+#if QT_CONFIG(tabletevent)
     case QEvent::TabletMove:
     case QEvent::TabletPress:
     case QEvent::TabletRelease:
     case QEvent::TabletEnterProximity:
     case QEvent::TabletLeaveProximity:
         return QStringLiteral("QTabletEvent");
+#endif
     case QEvent::NativeGesture:
         return QStringLiteral("QNativeGestureEvent");
     case QEvent::KeyPress:
@@ -100,8 +110,10 @@ static QString eventTypeToClassName(QEvent::Type type)
         return QStringLiteral("QPaintEvent");
     case QEvent::Enter:
         return QStringLiteral("QEnterEvent");
+#if QT_CONFIG(wheelevent)
     case QEvent::Wheel:
         return QStringLiteral("QWheelEvent");
+#endif
     case QEvent::HoverEnter:
     case QEvent::HoverMove:
     case QEvent::HoverLeave:
@@ -219,44 +231,45 @@ static EventData createEventData(QObject *receiver, QEvent *event)
     // try to extract the method name, arguments and return value from a meta call event:
     if (event->type() == QEvent::MetaCall) {
         eventData.attributes << QPair<const char *, QVariant> { "[receiver type]", Util::displayString(receiver) };
-        // QMetaCallEvent about to change in 5.14? see https://code.qt.io/cgit/qt/qtbase.git/commit/?h=dev&id=999c26dd83ad37fcd7a2b2fc62c0281f38c8e6e0
-        QMetaCallEvent *metaCallEvent = static_cast<QMetaCallEvent *>(event);
-        if (metaCallEvent) {
-            int methodIndex = metaCallEvent->id();
-            if (methodIndex == int(ushort(-1))) {
-                // TODO: this is a slot call, but QMetaCall::slotObj is private
-                eventData.attributes << QPair<const char *, QVariant> { "[method name]", "[unknown slot]" };
-            } else {
-                // TODO: should first check if nargs and types is set, but both are private
-                const QMetaObject *meta = receiver->metaObject();
-                if (meta) {
-                    QMetaMethod method = meta->method(metaCallEvent->id());
-                    eventData.attributes << QPair<const char *, QVariant> { "[method name]", method.name() };
-                    void **argv = metaCallEvent->args();
-                    if (argv) { // nullptr e.g. for QDBusCallDeliveryEvent
-                        if (method.returnType() != QMetaType::Void) {
-                            void *returnValueCopy = QMetaType::create(method.returnType(), argv[0]);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                            eventData.attributes << QPair<const char *, QVariant> { "[return value]", QVariant(method.returnType(), returnValueCopy) };
+#if QT_VERSION >= QT_VERSION_CHECK(6, 11, 0)
+        auto *metaCallEvent = static_cast<MetaCallEventCopy *>(event);
+        const ushort methodIndex = metaCallEvent->signalId() >= 0 ? metaCallEvent->signalId() : metaCallEvent->d.method_offset_ + metaCallEvent->d.method_relative_;
 #else
-                            eventData.attributes << QPair<const char *, QVariant> { "[return value]", QVariant(QMetaType(method.returnType()), returnValueCopy) };
+        auto *metaCallEvent = static_cast<QMetaCallEvent *>(event);
+        int methodIndex = metaCallEvent->id();
 #endif
-                        }
-                        int argc = method.parameterCount();
-                        QVariantMap vargs;
-                        for (int i = 0; i < argc; ++i) {
-                            int type = method.parameterType(i);
-                            void *argumentDataCopy = QMetaType::create(type, argv[i + 1]);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                            vargs.insert(method.parameterNames().at(i), QVariant(type, argumentDataCopy));
+
+        if (methodIndex == ushort(-1)) {
+            eventData.attributes << QPair<const char *, QVariant> { "[method name]", "[unknown slot]" };
+        } else if (receiver->metaObject()) {
+            const QMetaObject *meta = receiver->metaObject();
+            QMetaMethod method = meta->method(methodIndex);
+            if (method.isValid()) {
+                eventData.attributes << QPair<const char *, QVariant> { "[method name]", method.name() };
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 11, 0)
+                void **argv = metaCallEvent->d.args_;
+                int argc = std::min<int>(metaCallEvent->d.nargs_, method.parameterCount());
 #else
-                            vargs.insert(method.parameterNames().at(i), QVariant(QMetaType(type), argumentDataCopy));
+                void **argv = metaCallEvent->args();
+                int argc = method.parameterCount();
 #endif
-                        }
-                        if (argc > 0)
-                            eventData.attributes << QPair<const char *, QVariant> { "[arguments]", vargs };
+                if (argv) { // nullptr e.g. for QDBusCallDeliveryEvent
+                    if (method.returnType() != QMetaType::Void) {
+                        void *returnValueCopy = QMetaType(method.returnType()).create(argv[0]);
+                        eventData.attributes << QPair<const char *, QVariant> { "[return value]", QVariant(QMetaType(method.returnType()), returnValueCopy) };
                     }
+                    QVariantMap vargs;
+                    for (int i = 0; i < argc; ++i) {
+                        int type = method.parameterType(i);
+                        void *argumentDataCopy = QMetaType(type).create(argv[i + 1]);
+                        vargs.insert(method.parameterNames().at(i), QVariant(QMetaType(type), argumentDataCopy));
+                    }
+                    if (argc > 0)
+                        eventData.attributes << QPair<const char *, QVariant> { "[arguments]", vargs };
                 }
+            } else {
+                eventData.attributes << QPair<const char *, QVariant> { "[method name]", "[unknown slot]" };
             }
         }
     }

@@ -1,14 +1,16 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
-if(TARGET Qt5::Core)
-    add_subdirectory(codecbrowser)
+
+if(TARGET Qt6::StateMachine)
     add_subdirectory(statemachineviewer)
+else()
+    message(STATUS "WARNING: Skipping the statemachineviewer plugin since Qt6StateMachine was not found")
 endif()
 add_subdirectory(eventmonitor)
 add_subdirectory(fontbrowser)
@@ -21,7 +23,6 @@ add_subdirectory(timertop)
 
 add_subdirectory(mimetypes)
 add_subdirectory(network)
-add_subdirectory(qtivi)
 add_subdirectory(sysinfo)
 add_subdirectory(translatorinspector)
 add_subdirectory(webinspector)
@@ -31,7 +32,8 @@ if(TARGET Qt::Gui)
     add_subdirectory(guisupport)
     add_subdirectory(textdocumentinspector)
 endif()
-if(TARGET Qt5::Gui OR TARGET Qt6::OpenGL)
+
+if(TARGET Qt::OpenGL)
     add_subdirectory(openglsupport)
 endif()
 

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,7 +12,6 @@
 */
 
 /*!
-    \contentspage {GammaRay User Manual}
     \previouspage {System Information}
     \nextpage {Properties}
     \page gammaray-object-inspection.html
@@ -40,7 +39,7 @@
 
     \section2 QML
 
-    The following views are available for objects used in a QML context, or types decalred in QML. This is not limited to \l{Qt Quick},
+    The following views are available for objects used in a QML context, or types declared in QML. This is not limited to \l{Qt Quick},
     but also includes \l{Qt 3D} or even custom use of the QQmlEngine.
 
     \list

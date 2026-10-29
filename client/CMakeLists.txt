@@ -1,29 +1,47 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
+
 set(gammaray_clientlib_srcs
-    client.cpp
-    remotemodel.cpp
-    selectionmodelclient.cpp
-    clientconnectionmanager.cpp
-    propertycontrollerclient.cpp
-    probecontrollerclient.cpp
-    processtracker.cpp
-    toolmanagerclient.cpp
-    clientdevice.cpp
-    tcpclientdevice.cpp
-    localclientdevice.cpp
-    messagestatisticsmodel.cpp
-    paintanalyzerclient.cpp
-    remoteviewclient.cpp
-    enumrepositoryclient.cpp
     classesiconsrepositoryclient.cpp
+    classesiconsrepositoryclient.h
+    client.cpp
+    client.h
+    clientconnectionmanager.cpp
+    clientconnectionmanager.h
+    clientdevice.cpp
+    clientdevice.h
+    enumrepositoryclient.cpp
+    enumrepositoryclient.h
     favoriteobjectclient.cpp
+    favoriteobjectclient.h
+    localclientdevice.cpp
+    localclientdevice.h
+    messagestatisticsmodel.cpp
+    messagestatisticsmodel.h
+    paintanalyzerclient.cpp
+    paintanalyzerclient.h
+    probecontrollerclient.cpp
+    probecontrollerclient.h
+    processtracker.cpp
+    processtracker.h
+    propertycontrollerclient.cpp
+    propertycontrollerclient.h
+    remotemodel.cpp
+    remotemodel.h
+    remoteviewclient.cpp
+    remoteviewclient.h
+    selectionmodelclient.cpp
+    selectionmodelclient.h
+    tcpclientdevice.cpp
+    tcpclientdevice.h
+    toolmanagerclient.cpp
+    toolmanagerclient.h
     ${CMAKE_SOURCE_DIR}/resources/gammaray.qrc
 )
 
@@ -52,15 +70,13 @@ target_include_directories(
 )
 target_link_libraries(
     gammaray_client
-    LINK_PUBLIC
-    Qt::Core
-    LINK_PRIVATE
-    gammaray_ui
-    gammaray_ui_internal
-    gammaray_common
-    Qt::Gui
-    Qt::Widgets
-    Qt::Network
+    PUBLIC Qt::Core
+    PRIVATE gammaray_ui
+            gammaray_ui_internal
+            gammaray_common
+            Qt::Gui
+            Qt::Widgets
+            Qt::Network
 )
 if(GAMMARAY_USE_PCH)
     target_precompile_headers(gammaray_client REUSE_FROM gammaray_pch_core_gui)

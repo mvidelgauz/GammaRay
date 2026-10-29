@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Giulio Camuffo <giulio.camuffo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -28,9 +28,9 @@ struct RingBuffer
         Q_ASSERT(capacity > 0);
     }
 
-    int count() const
+    int size() const
     {
-        return qMin(m_capacity, m_vector.count());
+        return qMin(m_capacity, m_vector.size());
     }
     int capacity() const
     {
@@ -38,17 +38,17 @@ struct RingBuffer
     }
     bool isEmpty() const
     {
-        return count() == 0;
+        return size() == 0;
     }
 
     const T &last() const
     {
-        return at(count() - 1);
+        return at(size() - 1);
     }
 
     void append(const T &t)
     {
-        if (m_vector.count() == m_capacity) {
+        if (m_vector.size() == m_capacity) {
             m_vector[m_head++] = t;
             if (m_head >= m_capacity)
                 m_head = 0;

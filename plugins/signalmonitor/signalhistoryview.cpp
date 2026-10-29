@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Mathias Hasselmann <mathias.hasselmann@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -119,11 +119,7 @@ bool SignalHistoryView::viewportEvent(QEvent *event)
 
 void SignalHistoryView::wheelEvent(QWheelEvent *e)
 {
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-    auto pos = e->pos();
-#else
     auto pos = e->position().toPoint();
-#endif
     if (pos.x() < eventColumnPosition()) {
         DeferredTreeView::wheelEvent(e);
         return;

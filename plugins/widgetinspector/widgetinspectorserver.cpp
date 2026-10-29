@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -41,7 +41,6 @@
 #include "common/paths.h"
 #include <common/probecontrollerinterface.h>
 #include <common/remoteviewframe.h>
-#include <common/recursiveproxymodelbase.h>
 
 #include <QAction>
 #include <QAbstractItemView>
@@ -49,9 +48,6 @@
 #include <QButtonGroup>
 #include <QComboBox>
 #include <QCompleter>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QDesktopWidget>
-#endif
 #include <QDialog>
 #include <QGraphicsEffect>
 #include <QGraphicsProxyWidget>
@@ -71,6 +67,7 @@
 #include <QStyle>
 #include <QToolButton>
 #include <QWindow>
+#include <QSortFilterProxyModel>
 
 #include <iostream>
 
@@ -111,7 +108,7 @@ WidgetInspectorServer::WidgetInspectorServer(Probe *probe, QObject *parent)
     auto *widgetFilterProxy = new WidgetTreeModel(this);
     widgetFilterProxy->setSourceModel(probe->objectTreeModel());
 
-    auto widgetSearchProxy = new ServerProxyModel<RecursiveProxyModelBase>(this);
+    auto widgetSearchProxy = new ServerProxyModel<QSortFilterProxyModel>(this);
     widgetSearchProxy->setSourceModel(widgetFilterProxy);
     widgetSearchProxy->addRole(ObjectModel::ObjectIdRole);
 
@@ -179,14 +176,6 @@ void WidgetInspectorServer::widgetSelectionChanged(const QItemSelection &selecti
     m_selectedWidget = widget;
     m_remoteView->setEventReceiver(m_selectedWidget ? m_selectedWidget->window()->windowHandle() : nullptr);
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    if (m_selectedWidget
-        && (qobject_cast<QDesktopWidget *>(m_selectedWidget)
-            || m_selectedWidget->inherits("QDesktopScreenWidget"))) {
-        m_overlayWidget->placeOn(WidgetOrLayoutFacade());
-        return;
-    }
-#endif
     if (m_selectedWidget == m_overlayWidget) {
         // this should not happen, but apparently our object recovery is slightly too good sometimes ;)
         return;
@@ -220,7 +209,7 @@ bool WidgetInspectorServer::eventFilter(QObject *object, QEvent *event)
         QMouseEvent *mouseEv = static_cast<QMouseEvent *>(event);
         if (mouseEv->button() == Qt::LeftButton
             && mouseEv->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)) {
-            QWidget *widget = QApplication::widgetAt(mouseEv->globalPos());
+            QWidget *widget = QApplication::widgetAt(mouseEv->globalPosition().toPoint());
             if (widget) {
                 // also select the corresponding model if a view was selected
                 if (QAbstractItemView *view = Util::findParentOfType<QAbstractItemView>(object))
@@ -232,7 +221,7 @@ bool WidgetInspectorServer::eventFilter(QObject *object, QEvent *event)
                         m_probe->selectObject(toolButton->defaultAction());
                 }
 
-                m_probe->selectObject(widget, widget->mapFromGlobal(mouseEv->globalPos()));
+                m_probe->selectObject(widget, widget->mapFromGlobal(mouseEv->globalPosition().toPoint()));
                 widgetSelected(widget);
             }
         }
@@ -394,7 +383,7 @@ GammaRay::ObjectIds WidgetInspectorServer::recursiveWidgetsAt(QWidget *parent, c
 
     bestCandidate = -1;
 
-    const auto childItems = parent->children();
+    const auto &childItems = parent->children();
     for (int i = childItems.size() - 1; i >= 0; --i) { // backwards to match z order
         auto c = childItems.at(i);
         if (!c->isWidgetType() || c->metaObject()->className() == QLatin1String("GammaRay::OverlayWidget"))
@@ -406,7 +395,7 @@ GammaRay::ObjectIds WidgetInspectorServer::recursiveWidgetsAt(QWidget *parent, c
             const bool hasSubChildren = !w->children().isEmpty();
 
             if (hasSubChildren) {
-                const int count = objects.count();
+                const int count = objects.size();
                 int bc;
                 objects << recursiveWidgetsAt(w, p, mode, bc);
 
@@ -415,7 +404,7 @@ GammaRay::ObjectIds WidgetInspectorServer::recursiveWidgetsAt(QWidget *parent, c
                 }
             } else {
                 if (bestCandidate == -1 && isGoodCandidateWidget(w)) {
-                    bestCandidate = objects.count();
+                    bestCandidate = objects.size();
                 }
 
                 objects << ObjectId(w);
@@ -428,7 +417,7 @@ GammaRay::ObjectIds WidgetInspectorServer::recursiveWidgetsAt(QWidget *parent, c
     }
 
     if (bestCandidate == -1 && isGoodCandidateWidget(parent)) {
-        bestCandidate = objects.count();
+        bestCandidate = objects.size();
     }
 
     objects << ObjectId(parent);
@@ -463,14 +452,16 @@ void WidgetInspectorServer::callExternalExportAction(const char *name, QWidget *
         }
     }
 
-    void (*function)(QWidget *, const QString &) = reinterpret_cast<void (*)(QWidget *,
-                                                                             const QString &)>(m_externalExportActions->resolve(name));
+    if (m_externalExportActions) {
+        void (*function)(QWidget *, const QString &) = reinterpret_cast<void (*)(QWidget *,
+                                                                                 const QString &)>(m_externalExportActions->resolve(name));
 
-    if (!function) {
-        cerr << Q_FUNC_INFO << ' ' << qPrintable(m_externalExportActions->errorString()) << endl;
-        return;
+        if (!function) {
+            cerr << Q_FUNC_INFO << ' ' << qPrintable(m_externalExportActions->errorString()) << endl;
+            return;
+        }
+        function(widget, fileName);
     }
-    function(widget, fileName);
 }
 
 void WidgetInspectorServer::analyzePainting()
@@ -563,9 +554,6 @@ void WidgetInspectorServer::registerWidgetMetaTypes()
     MO_ADD_PROPERTY_ST(QApplication, activeModalWidget);
     MO_ADD_PROPERTY_ST(QApplication, activePopupWidget);
     MO_ADD_PROPERTY_ST(QApplication, activeWindow);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    MO_ADD_PROPERTY_ST(QApplication, desktop);
-#endif
     MO_ADD_PROPERTY_ST(QApplication, focusWidget);
     MO_ADD_PROPERTY_ST(QApplication, style);
     MO_ADD_PROPERTY_ST(QApplication, topLevelWidgets);

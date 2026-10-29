@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Mathias Hasselmann <mathias.hasselmann@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -19,12 +19,14 @@
 #include <core/toolfactory.h>
 
 QT_BEGIN_NAMESPACE
-class QAbstractItemModel;
+class QAbstractProxyModel;
 class QItemSelectionModel;
 class QTimer;
 QT_END_NAMESPACE
 
 namespace GammaRay {
+class SignalHistoryModel;
+
 class SignalMonitor : public SignalMonitorInterface
 {
     Q_OBJECT
@@ -42,7 +44,8 @@ private slots:
 
 private:
     QTimer *m_clock;
-    QAbstractItemModel *m_objModel;
+    SignalHistoryModel *m_historyModel;
+    QAbstractProxyModel *m_objModel;
     QItemSelectionModel *m_objSelectionModel;
 };
 

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Anton Kreuzkamp <anton.kreuzkamp@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -61,11 +61,7 @@ bool MaterialExtension::setObject(void *object, const QString &typeName)
 
     m_materialPropertyModel->setObject(ObjectInstance(material, "QSGMaterial"));
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     m_materialShader.reset(material->createShader(QSGRendererInterface::RenderMode2D));
-#else
-    m_materialShader.reset(material->createShader());
-#endif
     m_shaderModel->setMaterialShader(m_materialShader.get());
     return true;
 }

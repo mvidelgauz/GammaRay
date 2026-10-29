@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -20,12 +20,7 @@ LocalClientDevice::LocalClientDevice(QObject *parent)
 {
     m_socket = new QLocalSocket(this);
     connect(m_socket, &QLocalSocket::connected, this, &ClientDevice::connected);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    connect(m_socket, static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error),
-            this, &LocalClientDevice::socketError);
-#else
     connect(m_socket, &QLocalSocket::errorOccurred, this, &LocalClientDevice::socketError);
-#endif
 }
 
 void LocalClientDevice::connectToHost()

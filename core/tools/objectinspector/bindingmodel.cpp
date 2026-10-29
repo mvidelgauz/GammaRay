@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -179,7 +179,7 @@ QVariant BindingModel::data(const QModelIndex &index, int role) const
             return binding->sourceLocation().displayString();
         case DepthColumn: {
             uint depth = binding->depth();
-            return depth == std::numeric_limits<uint>::max() ? QStringLiteral("\u221E") : QString::number(depth); // Unicode infinity sign
+            return depth == std::numeric_limits<uint>::max() ? QString(QChar(0x221E)) : QString::number(depth); // Unicode infinity sign
         }
         }
     } else if (role == ObjectModel::DeclarationLocationRole) {

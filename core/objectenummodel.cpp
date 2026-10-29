@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -33,7 +33,7 @@ int ObjectEnumModel::rowCount(const QModelIndex &parent) const
 {
     if (!parent.isValid())
         return SuperClass::rowCount(parent);
-    if (parent.parent().isValid())
+    if (parent.parent().isValid() || parent.column() > 0)
         return 0;
     const QMetaEnum e = m_metaObject->enumerator(parent.row());
     return e.keyCount();
@@ -93,8 +93,9 @@ QModelIndex GammaRay::ObjectEnumModel::index(int row, int column, const QModelIn
 
 QModelIndex GammaRay::ObjectEnumModel::parent(const QModelIndex &child) const
 {
-    // note: Qt4 doesn't have qintptr
-    if (static_cast<qptrdiff>(child.internalId()) == -1)
+    if (!child.isValid())
+        return {};
+    if (static_cast<qintptr>(child.internalId()) == -1)
         return SuperClass::parent(child);
     return SuperClass::index(child.internalId(), 0, QModelIndex());
 }

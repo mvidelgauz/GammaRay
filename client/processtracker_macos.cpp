@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -49,7 +49,7 @@ void ProcessTrackerBackendMacOS::checkProcess(qint64 pid)
 
     // Call sysctl.
     size = sizeof(info);
-    status = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0); // krazy:exclude=null
+    status = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, nullptr, 0);
 
     if (status == 0) {
         // We're being debugged if the P_TRACED flag is set.

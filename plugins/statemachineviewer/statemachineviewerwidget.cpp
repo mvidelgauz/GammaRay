@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -25,14 +25,14 @@
 #include <ui/contextmenuextension.h>
 #include <ui/clientdecorationidentityproxymodel.h>
 
-#include <kdstatemachineeditor/core/elementmodel.h>
-#include <kdstatemachineeditor/core/layoutproperties.h>
-#include <kdstatemachineeditor/core/state.h>
-#include <kdstatemachineeditor/core/transition.h>
-#include <kdstatemachineeditor/core/runtimecontroller.h>
-#include <kdstatemachineeditor/view/statemachinescene.h>
-#include <kdstatemachineeditor/view/statemachinetoolbar.h>
-#include <kdstatemachineeditor/view/statemachineview.h>
+#include <elementmodel.h>
+#include <layoutproperties.h>
+#include <state.h>
+#include <transition.h>
+#include <runtimecontroller.h>
+#include <statemachinescene.h>
+#include <statemachinetoolbar.h>
+#include <statemachineview.h>
 
 #include <QDebug>
 #include <QMenu>

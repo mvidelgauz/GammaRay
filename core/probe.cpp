@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -42,8 +42,7 @@
 #include <common/streamoperators.h>
 #include <common/paths.h>
 
-#include <compat/qasconst.h>
-
+#include <QAbstractEventDispatcher>
 #include <QGuiApplication>
 #include <QWindow>
 #include <QDir>
@@ -53,9 +52,10 @@
 #include <QThread>
 #include <QTimer>
 #include <private/qobject_p.h>
-#include <private/qhooks_p.h>
 #include <algorithm>
 #include <iostream>
+#include <optional>
+#include <utility>
 #include <cstdio>
 
 #define IF_DEBUG(x)
@@ -74,11 +74,16 @@ QAtomicPointer<Probe> Probe::s_instance = QAtomicPointer<Probe>(nullptr);
 namespace GammaRay {
 static void signal_begin_callback(QObject *caller, int method_index, void **argv)
 {
-    // Ignore event dispatcher signals
-    if (caller->inherits("QAbstractEventDispatcher"))
+    // called for every signal emission, so do the cheap checks first, and compare meta objects
+    // instead of class names
+    if (method_index == 0 || !Probe::instance())
         return;
 
-    if (method_index == 0 || !Probe::instance() || Probe::instance()->filterObject(caller))
+    // Ignore event dispatcher signals
+    if (caller->metaObject()->inherits(&QAbstractEventDispatcher::staticMetaObject))
+        return;
+
+    if (Probe::instance()->filterObject(caller))
         return;
 
     method_index = Util::signalIndexToMethodIndex(caller->metaObject(), method_index);
@@ -124,6 +129,8 @@ static void slot_end_callback(QObject *caller, int method_index)
         return;
 
     QMutexLocker locker(Probe::objectLock());
+    if (!Probe::instance()) // destroyed while we waited for the lock
+        return;
     if (!Probe::instance()->isValidObject(caller)) // implies filterObject()
         return; // deleted in the slot
     locker.unlock();
@@ -175,11 +182,7 @@ Q_GLOBAL_STATIC(Listener, s_listener)
 
 // ensures proper information is returned by isValidObject by
 // locking it in objectAdded/Removed
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
 Q_GLOBAL_STATIC(QRecursiveMutex, s_lock)
-#else
-Q_GLOBAL_STATIC_WITH_ARGS(QMutex, s_lock, (QMutex::Recursive))
-#endif
 
 Probe::Probe(QObject *parent)
     : QObject(parent)
@@ -224,18 +227,7 @@ Probe::Probe(QObject *parent)
     connect(m_queueTimer, &QTimer::timeout,
             this, &Probe::processQueuedObjectChanges);
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     m_previousSignalSpyCallbackSet = qt_signal_spy_callback_set.loadRelaxed();
-#else
-    const auto *signal_spy_set = &qt_signal_spy_callback_set;
-    if (signal_spy_set) {
-        m_previousSignalSpyCallbackSet.signalBeginCallback = signal_spy_set->signal_begin_callback;
-        m_previousSignalSpyCallbackSet.signalEndCallback = signal_spy_set->signal_end_callback;
-        m_previousSignalSpyCallbackSet.slotBeginCallback = signal_spy_set->slot_begin_callback;
-        m_previousSignalSpyCallbackSet.slotEndCallback = signal_spy_set->slot_end_callback;
-        registerSignalSpyCallbackSet(m_previousSignalSpyCallbackSet); // daisy-chain existing callbacks
-    }
-#endif
 
     connect(this, &Probe::objectCreated, m_metaObjectRegistry, &MetaObjectRegistry::objectAdded);
     connect(this, &Probe::objectDestroyed, m_metaObjectRegistry, &MetaObjectRegistry::objectRemoved);
@@ -246,22 +238,7 @@ Probe::~Probe()
     emit aboutToDetach();
     IF_DEBUG(cerr << "detaching GammaRay probe" << endl;)
 
-    // Remove hooks
-    qtHookData[QHooks::AddQObject] = 0;
-    qtHookData[QHooks::RemoveQObject] = 0;
-    qtHookData[QHooks::Startup] = 0;
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     qt_register_signal_spy_callbacks(m_previousSignalSpyCallbackSet);
-#else
-    QSignalSpyCallbackSet prevCallbacks = {
-        m_previousSignalSpyCallbackSet.signalBeginCallback,
-        m_previousSignalSpyCallbackSet.slotBeginCallback,
-        m_previousSignalSpyCallbackSet.signalEndCallback,
-        m_previousSignalSpyCallbackSet.slotEndCallback
-    };
-    qt_register_signal_spy_callbacks(prevCallbacks);
-#endif
 
     ObjectBroker::clear();
     ProbeSettings::resetLauncherIdentifier();
@@ -288,11 +265,7 @@ MetaObjectRegistry *Probe::metaObjectRegistry() const
 
 Probe *GammaRay::Probe::instance()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     return s_instance.loadRelaxed();
-#else
-    return s_instance.load();
-#endif
 }
 
 bool Probe::isInitialized()
@@ -423,7 +396,7 @@ void Probe::showInProcessUi()
     ProbeGuard guard;
 
     QLibrary lib;
-    foreach (auto path, Paths::pluginPaths(QStringLiteral(GAMMARAY_PROBE_ABI))) {
+    for (auto &path : Paths::pluginPaths(QStringLiteral(GAMMARAY_PROBE_ABI))) {
         path += QStringLiteral("/gammaray_inprocessui");
 #if defined(GAMMARAY_INSTALL_QT_LAYOUT)
         path += '-';
@@ -509,11 +482,7 @@ ProblemCollector *Probe::problemCollector() const
     return m_problemCollector;
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
 QRecursiveMutex *Probe::objectLock()
-#else
-QMutex *Probe::objectLock()
-#endif
 {
     return s_lock();
 }
@@ -536,6 +505,8 @@ QMutex *Probe::objectLock()
  */
 void Probe::objectAdded(QObject *obj, bool fromCtor)
 {
+    if (obj == nullptr)
+        return;
     QMutexLocker lock(s_lock());
 
     // attempt to ignore objects created by GammaRay itself, especially short-lived ones
@@ -580,8 +551,13 @@ void Probe::objectAdded(QObject *obj, bool fromCtor)
     }
 
     // make sure we already know the parent
-    if (obj->parent() && !instance()->m_validObjects.contains(obj->parent()))
+    if (obj->parent() && !instance()->m_validObjects.contains(obj->parent())) {
         objectAdded(obj->parent(), fromCtor);
+        // announcing the parent runs slots connected to objectCreated(), and those might have
+        // discovered obj already (e.g. the widget inspector does that for the model of a view)
+        if (instance()->m_validObjects.contains(obj))
+            return;
+    }
     Q_ASSERT(!obj->parent() || instance()->m_validObjects.contains(obj->parent()));
 
     instance()->m_validObjects << obj;
@@ -613,23 +589,46 @@ void Probe::processQueuedObjectChanges()
     // must be called from the main thread via timeout
     Q_ASSERT(QThread::currentThread() == thread());
 
-    const auto queuedObjectChanges = m_queuedObjectChanges; // copy, in case this gets modified while we iterate (which can actually happen)
-    for (const auto &change : queuedObjectChanges) {
-        switch (change.type) {
-        case ObjectChange::Create:
-            objectFullyConstructed(change.obj);
-            break;
-        case ObjectChange::Destroy:
-            emit objectDestroyed(change.obj);
-            break;
+    // re-entered from a nested event loop in one of the handlers below, the outer call also
+    // processes what was queued meanwhile
+    if (m_processingQueuedObjectChanges)
+        return;
+
+    // The handlers below can queue further changes, e.g. by creating objects from slots connected
+    // to objectCreated(), so keep going until there are none left. The entries stay in the queue
+    // until all are done, as isObjectCreationQueued() needs to know about the creations that are
+    // not announced yet, and purgeChangesForObject() only clears entries meanwhile.
+    m_processingQueuedObjectChanges = true;
+    for (qsizetype processed = 0; processed < m_queuedObjectChanges.size();) {
+        const qsizetype end = m_queuedObjectChanges.size();
+        // Announce the destructions first. Those objects are gone already, but until their rows
+        // are removed the object models show them as "<deleted>". Rows inserted next to them would
+        // then be added while the filter data of their siblings changed without any dataChanged(),
+        // which corrupts the mapping of a recursively filtering QSortFilterProxyModel.
+        // This keeps the order between a destruction and a creation at the same address, since the
+        // old object's destruction is always queued before the new object's creation.
+        for (qsizetype i = processed; i < end; ++i) {
+            const auto change = m_queuedObjectChanges.at(i);
+            if (change.type == ObjectChange::Destroy)
+                emit objectDestroyed(change.obj);
         }
+        for (qsizetype i = processed; i < end; ++i) {
+            const auto change = m_queuedObjectChanges.at(i);
+            if (change.type == ObjectChange::Create && change.obj)
+                objectFullyConstructed(change.obj);
+        }
+        processed = end;
     }
+    m_processingQueuedObjectChanges = false;
 
     IF_DEBUG(cout << Q_FUNC_INFO << " done" << endl;)
 
     m_queuedObjectChanges.clear();
 
-    for (QObject *obj : qAsConst(m_pendingReparents)) {
+    // take the list, the handlers below can queue further reparents, those are processed in the
+    // next run
+    const auto pendingReparents = std::exchange(m_pendingReparents, {});
+    for (QObject *obj : pendingReparents) {
         if (!isValidObject(obj))
             continue;
         if (filterObject(obj)) // the move might have put it under a hidden parent
@@ -637,7 +636,6 @@ void Probe::processQueuedObjectChanges()
         else
             emit objectReparented(obj);
     }
-    m_pendingReparents.clear();
 }
 
 // pre-condition: lock is held already, our thread
@@ -697,13 +695,12 @@ void Probe::objectRemoved(QObject *obj)
         if (!s_listener())
             return;
 
+        // only the hooks add objects before the probe exists, so each is in there once, and most
+        // objects that die this early were created shortly before, so search from the end
         QVector<QObject *> &addedBefore = s_listener()->addedBeforeProbeInstance;
-        for (auto it = addedBefore.begin(); it != addedBefore.end();) {
-            if (*it == obj)
-                it = addedBefore.erase(it);
-            else
-                ++it;
-        }
+        const auto it = std::find(addedBefore.rbegin(), addedBefore.rend(), obj);
+        if (it != addedBefore.rend())
+            addedBefore.erase(std::next(it).base());
         return;
     }
 
@@ -768,7 +765,10 @@ void Probe::purgeChangesForObject(QObject *obj)
     for (int i = 0; i < m_queuedObjectChanges.size(); ++i) {
         if (m_queuedObjectChanges.at(i).obj == obj
             && m_queuedObjectChanges.at(i).type == ObjectChange::Create) {
-            m_queuedObjectChanges.remove(i);
+            if (m_processingQueuedObjectChanges)
+                m_queuedObjectChanges[i].obj = nullptr; // keep the indices of the others
+            else
+                m_queuedObjectChanges.remove(i);
             return;
         }
     }
@@ -799,6 +799,14 @@ bool Probe::eventFilter(QObject *receiver, QEvent *event)
     if (ProbeGuard::insideProbe() && receiver->thread() == QThread::currentThread())
         return QObject::eventFilter(receiver, event);
 
+    // this sees every event, and filterObject() walks all ancestors, so do that at most once
+    std::optional<bool> receiverFiltered;
+    const auto isReceiverFiltered = [&] {
+        if (!receiverFiltered)
+            receiverFiltered = filterObject(receiver);
+        return *receiverFiltered;
+    };
+
     if (event->type() == QEvent::ChildAdded || event->type() == QEvent::ChildRemoved) {
         QChildEvent *childEvent = static_cast<QChildEvent *>(event);
         QObject *obj = childEvent->child();
@@ -828,6 +836,11 @@ bool Probe::eventFilter(QObject *receiver, QEvent *event)
                 objectAdded(obj->parent());
                 m_pendingReparents.push_back(obj);
                 notifyQueuedObjectChanges();
+            } else if (!isObjectCreationQueued(obj)) {
+                // the new parent isn't announced yet, report the move after it is. Without an old
+                // parent, there is no ChildRemoved event that would do that
+                m_pendingReparents.push_back(obj);
+                notifyQueuedObjectChanges();
             }
         } else if (tracked) {
             // defer processing this until we know its final location
@@ -840,7 +853,7 @@ bool Probe::eventFilter(QObject *receiver, QEvent *event)
     if (event->type() == QEvent::ParentChange) {
         QMutexLocker lock(s_lock());
         const bool tracked = m_validObjects.contains(receiver);
-        const bool filtered = filterObject(receiver);
+        const bool filtered = isReceiverFiltered();
         const bool parentTracked = m_validObjects.contains(receiver->parent());
 
         if (!filtered && tracked && !isObjectCreationQueued(receiver)
@@ -860,7 +873,7 @@ bool Probe::eventFilter(QObject *receiver, QEvent *event)
         && event->type() != QEvent::ParentChange // already handled above
         && event->type() != QEvent::Destroy
         && event->type() != QEvent::WinIdChange // unsafe since emitted from dtors
-        && !filterObject(receiver)) {
+        && !isReceiverFiltered()) {
         QMutexLocker lock(s_lock());
         const bool tracked = m_validObjects.contains(receiver);
         if (!tracked)
@@ -868,8 +881,8 @@ bool Probe::eventFilter(QObject *receiver, QEvent *event)
     }
 
     // filters provided by plugins
-    if (!filterObject(receiver)) {
-        for (QObject *filter : qAsConst(m_globalEventFilters)) {
+    if (!m_globalEventFilters.isEmpty() && !isReceiverFiltered()) {
+        for (QObject *filter : std::as_const(m_globalEventFilters)) {
             filter->eventFilter(receiver, event);
         }
     }
@@ -994,11 +1007,7 @@ void Probe::setupSignalSpyCallbacks()
         if (it.slotEndCallback)
             cbs.slot_end_callback = slot_end_callback;
     }
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     qt_register_signal_spy_callbacks(&cbs);
-#else
-    qt_register_signal_spy_callbacks(cbs);
-#endif
 }
 
 template<typename Func>
@@ -1009,14 +1018,15 @@ void Probe::executeSignalCallback(const Func &func)
                   func);
 }
 
-SourceLocation Probe::objectCreationSourceLocation(QObject *object)
+SourceLocation Probe::objectCreationSourceLocation(const QObject *object)
 {
-    if (!s_listener()->constructionBacktracesForObjects.contains(object)) {
+    QObject *key = const_cast<QObject *>(object);
+    if (!s_listener()->constructionBacktracesForObjects.contains(key)) {
         IF_DEBUG(std::cout << "No backtrace for object available" << object << "." << std::endl;)
         return SourceLocation();
     }
 
-    const auto &st = s_listener()->constructionBacktracesForObjects.value(object);
+    const auto &st = s_listener()->constructionBacktracesForObjects.value(key);
     int distanceToQObject = 0;
 
     const QMetaObject *metaObject = object->metaObject();

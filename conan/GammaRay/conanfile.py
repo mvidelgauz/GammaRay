@@ -1,6 +1,6 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2019-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2019 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 # Author: Renato Araujo Oliveira Filho <renato.araujo@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,7 +12,7 @@ from conans import ConanFile, CMake, tools
 
 class GammaRayConan(ConanFile):
     name = "GammaRay"
-    version = "3.0.0"
+    version = "3.2.1"
     license = "https://raw.githubusercontent.com/KDAB/GammaRay/{0}/LICENSE.txt".format(version)
     author = "Klaralvdalens Datakonsult AB (KDAB) info@kdab.com"
     url = "https://github.com/KDAB/GammaRay.git"

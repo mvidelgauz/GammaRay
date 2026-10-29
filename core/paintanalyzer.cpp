@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -94,11 +94,7 @@ void PaintAnalyzer::repaint()
     }
 
     const QSize sourceSize = m_paintBufferModel->buffer().boundingRect().size().toSize();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     const qreal ratio = m_paintBufferModel->buffer().devicePixelRatioF();
-#else
-    const qreal ratio = m_paintBufferModel->buffer().devicePixelRatio();
-#endif
     QImage image(sourceSize * ratio, QImage::Format_ARGB32);
     image.setDevicePixelRatio(ratio);
     image.fill(Qt::transparent);

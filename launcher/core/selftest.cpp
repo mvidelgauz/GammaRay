@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -11,10 +11,14 @@
   Contact KDAB at <info@kdab.com> for commercial licensing options.
 */
 
+#include <config-gammaray.h>
+
 #include "selftest.h"
 #include "probeabi.h"
 #include "probefinder.h"
 #include "injector/injectorfactory.h"
+
+#include <common/paths.h>
 
 #include <QFileInfo>
 
@@ -37,6 +41,9 @@ bool SelfTest::checkEverything()
 bool SelfTest::checkProbes()
 {
     int validProbeCount = 0;
+    // the probe of this build, a target needs a Qt matching it
+    emit information(tr("This GammaRay was built for probe ABI %1, probes are searched in %2.")
+                         .arg(QStringLiteral(GAMMARAY_PROBE_ABI), Paths::probePath(QString())));
     const QVector<ProbeABI> probeABIs = ProbeFinder::listProbeABIs();
     for (const ProbeABI &abi : probeABIs) {
         const QString probePath = ProbeFinder::findProbe(abi);
@@ -47,7 +54,7 @@ bool SelfTest::checkProbes()
 
         QFileInfo fi(probePath);
         if (!fi.exists() || !fi.isFile() || !fi.isReadable()) {
-            emit error(tr("Probe at %1 is invalid."));
+            emit error(tr("Probe at %1 is invalid.").arg(probePath));
             continue;
         }
 

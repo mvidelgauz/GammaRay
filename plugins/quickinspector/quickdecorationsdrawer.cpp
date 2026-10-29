@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,8 +12,6 @@
 */
 
 #include "quickdecorationsdrawer.h"
-
-#include <compat/qasconst.h>
 
 #include <QDebug>
 #include <QPainter>
@@ -251,7 +249,7 @@ void QuickDecorationsDrawer::drawDecorations()
 
     // Finally draw texts over the traced rectangles and lines
     // This make sure texts are always readable
-    for (const auto &t : qAsConst(texts)) {
+    for (const auto &t : std::as_const(texts)) {
         if (t.label.isEmpty())
             continue;
 
@@ -283,11 +281,7 @@ void QuickDecorationsDrawer::drawTraces()
         m_painter->setPen(QColor(60, 60, 60, 70));
         m_painter->setBrush(m_painter->pen().color());
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-        const int margin = m_painter->fontMetrics().width(QLatin1Char('X')) / 2;
-#else
         const int margin = m_painter->fontMetrics().horizontalAdvance(QLatin1Char('X')) / 2;
-#endif
         const QRectF classRect =
             itemGeometry.boundingRect.adjusted(
                 0, 0, 0,
@@ -359,6 +353,7 @@ void QuickDecorationsDrawer::drawGrid()
     QVector<QLineF> lines;
     lines.reserve((viewRect.width() / gridCellSize.width()) + (viewRect.height() / gridCellSize.height()));
 
+    // NOLINTNEXTLINE (clang-analyzer-security.FloatLoopCounter)
     for (qreal x = viewRect.left() + gridOffset.x(); x < viewRect.right(); x += gridCellSize.width()) {
         if (x < viewRect.left())
             continue;
@@ -367,6 +362,7 @@ void QuickDecorationsDrawer::drawGrid()
                         QPointF(x, viewRect.bottom()) * m_renderInfo->zoom);
     }
 
+    // NOLINTNEXTLINE (clang-analyzer-security.FloatLoopCounter)
     for (qreal y = viewRect.top() + gridOffset.y(); y < viewRect.bottom(); y += gridCellSize.height()) {
         if (y < viewRect.top())
             continue;

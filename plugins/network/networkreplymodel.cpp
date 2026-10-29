@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2019-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2019 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -21,9 +21,7 @@
 
 // TODO: Should the network module import Qt Private headers? Or should this be somewhere else?
 #include <private/qobject_p.h>
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 #include <private/qobject_p_p.h>
-#endif
 
 #include <iostream>
 #include <limits>
@@ -37,9 +35,6 @@ Q_DECLARE_METATYPE(GammaRay::NetworkReplyModel::ReplyNode)
 namespace {
 bool prioritizeLatestConnection(QObject *sender, const char *normalizedSignalName, QObject *receiver)
 {
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-    return false;
-#else
     const auto senderPrivate = QObjectPrivate::get(sender);
     const auto sigIndex = senderPrivate->signalIndex(normalizedSignalName);
     if (sigIndex < 0) {
@@ -86,7 +81,6 @@ bool prioritizeLatestConnection(QObject *sender, const char *normalizedSignalNam
     }
 
     return false;
-#endif
 }
 
 NetworkReply::ContentType contentType(const QVariant &v)
@@ -296,7 +290,9 @@ void NetworkReplyModel::replyFinished(QNetworkReply *reply, QNetworkAccessManage
         node.errorMsgs.push_back(reply->errorString());
     }
 
-    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager *, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format off
+    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager*, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format on
 
     if (reply->thread() != thread()) {
         connect(
@@ -320,7 +316,9 @@ void NetworkReplyModel::replyProgressSync(QNetworkReply *reply, qint64 progress,
     node.size = std::max(progress, total);
     maybePeekResponse(node, reply);
 
-    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager *, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format off
+    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager*, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format on
 }
 
 #ifndef QT_NO_SSL
@@ -333,8 +331,9 @@ void NetworkReplyModel::replyEncrypted(QNetworkReply *reply, QNetworkAccessManag
     node.url = reply->url();
     node.op = reply->operation();
     node.state |= NetworkReply::Encrypted;
-
-    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager *, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format off
+    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager*, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format on
 }
 
 void NetworkReplyModel::replySslErrors(QNetworkReply *reply, const QList<QSslError> &errors, QNetworkAccessManager *nam)
@@ -350,7 +349,9 @@ void NetworkReplyModel::replySslErrors(QNetworkReply *reply, const QList<QSslErr
         node.errorMsgs.push_back(err.errorString());
     }
 
-    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager *, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format off
+    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager*, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format on
 }
 #endif
 
@@ -360,7 +361,9 @@ void NetworkReplyModel::replyDeleted(QNetworkReply *reply, QNetworkAccessManager
     ReplyNode node;
     node.reply = reply;
     node.state |= NetworkReply::Deleted;
-    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager *, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format off
+    QMetaObject::invokeMethod(this, "updateReplyNode", Qt::AutoConnection, Q_ARG(QNetworkAccessManager*, nam), Q_ARG(GammaRay::NetworkReplyModel::ReplyNode, node));
+    // clang-format on
 }
 
 void NetworkReplyModel::maybePeekResponse(ReplyNode &node, QNetworkReply *reply) const

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Mathias Hasselmann <mathias.hasselmann@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -74,6 +74,8 @@ public:
     ~SignalHistoryModel() override;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    /// the row of @p object, if it is in the model already
+    QModelIndex indexForObject(QObject *object) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QVariant headerData(int section, Qt::Orientation orientation,

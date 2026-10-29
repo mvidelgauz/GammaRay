@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -22,8 +22,6 @@
 #include <common/endpoint.h>
 #include <common/message.h>
 #include <common/paths.h>
-
-#include <compat/qasconst.h>
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -92,8 +90,8 @@ Launcher::Launcher(const LaunchOptions &options, QObject *parent)
 {
     Q_ASSERT(options.isValid());
 
-    const auto timeout = qgetenv("GAMMARAY_LAUNCHER_TIMEOUT").toInt();
-    d->safetyTimer.setInterval(std::max(60, timeout) * 1000);
+    const auto timeout = qEnvironmentVariableIntValue("GAMMARAY_LAUNCHER_TIMEOUT");
+    d->safetyTimer.setInterval((timeout > 0 ? timeout : 60) * 1000);
     d->safetyTimer.setSingleShot(true);
     connect(&d->safetyTimer, &QTimer::timeout, this, &Launcher::timeout);
 }
@@ -121,16 +119,12 @@ void Launcher::stop()
 
 static QProcessEnvironment addTargetPluginPaths(QProcessEnvironment env, const ProbeABI &abi)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     QString qtPluginPath = env.value(QStringLiteral("QT_PLUGIN_PATH"));
     if (!qtPluginPath.isEmpty()) {
         qtPluginPath.append(QDir::listSeparator());
     }
     qtPluginPath.append(Paths::targetPluginPaths(abi.id()).join(QDir::listSeparator()));
     env.insert(QStringLiteral("QT_PLUGIN_PATH"), qtPluginPath);
-#else
-    Q_UNUSED(abi);
-#endif
     return env;
 }
 
@@ -153,7 +147,7 @@ bool Launcher::start()
     if (!d->injector) {
         Q_ASSERT(!errorStrings.isEmpty());
         std::cerr << "Potential errors:" << std::endl;
-        for (const QString &errorString : qAsConst(errorStrings)) {
+        for (const QString &errorString : std::as_const(errorStrings)) {
             injectorError(-1, errorString);
         }
         std::cerr << std::endl;
@@ -321,6 +315,9 @@ void Launcher::timeout()
 
 void Launcher::restartTimer()
 {
+    // the in-process UI doesn't need the server, which might not even be enabled
+    if (d->options.uiMode() == LaunchOptions::InProcessUi)
+        return;
     d->safetyTimer.stop();
     d->safetyTimer.start();
 }
@@ -361,25 +358,27 @@ void Launcher::newConnection()
 
 void Launcher::readyRead()
 {
-    while (Message::canReadMessage(d->socket)) {
-        const auto msg = Message::readMessage(d->socket);
-        switch (msg.type()) {
-        case Protocol::ServerAddress: {
-            msg >> d->serverAddress;
-            break;
-        }
-        case Protocol::ServerLaunchError: {
-            QString reason;
-            msg >> reason;
-            std::cerr << "Failed to start server: " << qPrintable(reason)
-                      << std::endl;
-            // TODO emit error signal to also notify qtcreator, etc
-            break;
-        }
-        default:
-            continue;
-        }
+    if (!Message::canReadMessage(d->socket)) {
+        // it's a partial write, wait for rest of message
+        return;
     }
+
+    const auto msg = Message::readMessage(d->socket);
+    switch (msg.type()) {
+    case Protocol::ServerAddress: {
+        msg >> d->serverAddress;
+        break;
+    }
+    case Protocol::ServerLaunchError: {
+        QString reason;
+        msg >> reason;
+        // the probe won't report back anymore, no need to wait for the timeout
+        d->safetyTimer.stop();
+        injectorError(1, tr("Failed to start server: %1").arg(reason));
+        return;
+    }
+    }
+
 
     if (d->serverAddress.isEmpty())
         return;

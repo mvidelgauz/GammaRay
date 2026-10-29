@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -33,13 +33,7 @@ int main(int argc, char **argv)
     QCoreApplication::setOrganizationName(QStringLiteral("KDAB"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("kdab.com"));
     QCoreApplication::setApplicationName(QStringLiteral("GammaRay"));
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-#endif
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
-    QGuiApplication::setDesktopFileName(QStringLiteral("GammaRay.desktop"));
-#endif
+    QGuiApplication::setDesktopFileName(QStringLiteral("GammaRay"));
 
     QApplication app(argc, argv);
     Paths::setRelativeRootPath(GAMMARAY_INVERSE_LIBEXEC_DIR);

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -67,6 +67,8 @@ void ObjectTreeModel::objectAdded(QObject *obj)
 
     if (indexForObject(obj).isValid()) {
         IF_DEBUG(cout << "tree double obj added: " << hex << obj << endl;)
+        // added already as the parent of an object announced before it, it can have moved since
+        objectReparented(obj);
         return;
     }
 
@@ -117,6 +119,17 @@ void ObjectTreeModel::objectRemoved(QObject *obj)
         return;
     }
 
+    // Children are destroyed before their parent, so the ones still here moved away already, only
+    // their move isn't reported yet. They would disappear together with this row, so move them now.
+    const auto children = m_parentChildMap.value(obj);
+    for (QObject *child : children) {
+        if (Probe::instance()->isValidObject(child))
+            objectReparented(child);
+        else
+            objectRemoved(child);
+    }
+    parentIt = m_childParentMap.constFind(obj);
+
     QObject *parentObj = parentIt.value();
     const QModelIndex parentIndex = indexForObject(parentObj);
     if (parentObj && !parentIndex.isValid())
@@ -159,11 +172,29 @@ void ObjectTreeModel::objectReparented(QObject *obj)
         return;
     }
 
-    QObject *oldParent = parentIt.value();
+    // The probe reports moves in the order it noticed them, so the new parent or one of its
+    // ancestors can still be below obj here, when its own move isn't reported yet. Moving obj
+    // there would put it below itself, so move those to where they actually are first.
+    QVector<QObject *> movedAncestors;
+    for (QObject *ancestor = parentObject(obj); ancestor; ancestor = parentObject(ancestor)) {
+        const auto it = m_childParentMap.constFind(ancestor);
+        if (it != m_childParentMap.cend() && it.value() != parentObject(ancestor))
+            movedAncestors.push_front(ancestor);
+    }
+    for (QObject *ancestor : std::as_const(movedAncestors))
+        objectReparented(ancestor);
+    // like objectAdded(), add a new parent that the probe didn't announce yet
+    if (parentObject(obj) && !indexForObject(parentObject(obj)).isValid())
+        objectAdded(parentObject(obj));
+
+    QObject *oldParent = m_childParentMap.value(obj);
     const auto sourceParent = indexForObject(oldParent);
     if ((oldParent && !sourceParent.isValid()) || (oldParent == parentObject(obj)))
         return;
 
+    // creating the entry of a new parent without children can rehash the map, so do that before
+    // taking a reference to the old parent's entry
+    QVector<QObject *> &newSiblings = m_parentChildMap[parentObject(obj)];
     QVector<QObject *> &oldSiblings = m_parentChildMap[oldParent];
     auto oldIt = std::lower_bound(oldSiblings.begin(),
                                   oldSiblings.end(), obj);
@@ -175,7 +206,6 @@ void ObjectTreeModel::objectReparented(QObject *obj)
     const auto destParent = indexForObject(parentObject(obj));
     Q_ASSERT(destParent.isValid() || !parentObject(obj));
 
-    QVector<QObject *> &newSiblings = m_parentChildMap[parentObject(obj)];
     auto newIt = std::lower_bound(newSiblings.begin(),
                                   newSiblings.end(), obj);
     const int destRow = std::distance(newSiblings.begin(), newIt);

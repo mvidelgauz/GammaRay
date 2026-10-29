@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -25,7 +25,7 @@ class PropertyEnumEditorModel;
 class PropertyEnumEditor : public QComboBox
 {
     Q_OBJECT
-    Q_PROPERTY(GammaRay::EnumValue enumValue READ enumValue WRITE setEnumValue USER true)
+    Q_PROPERTY(GammaRay::EnumValue enumValue READ enumValue WRITE setEnumValue USER true) // clazy:exclude=qproperty-without-notify
 public:
     explicit PropertyEnumEditor(QWidget *parent = nullptr);
     ~PropertyEnumEditor() override;

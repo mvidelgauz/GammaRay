@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -106,9 +106,11 @@ QVariant AggregatedPropertyModel::data(const QModelIndex &index, int role) const
 
     const auto adaptor = adaptorForIndex(index);
     if (!adaptor->object().isValid()) {
+        // clang-format off
         QMetaObject::invokeMethod(const_cast<AggregatedPropertyModel *>(this), "objectInvalidated",
                                   Qt::QueuedConnection,
-                                  Q_ARG(GammaRay::PropertyAdaptor *, adaptor));
+                                  Q_ARG(GammaRay::PropertyAdaptor*, adaptor));
+        // clang-format on
         return QVariant();
     }
 
@@ -124,9 +126,11 @@ QMap<int, QVariant> AggregatedPropertyModel::itemData(const QModelIndex &index) 
 
     const auto adaptor = adaptorForIndex(index);
     if (!adaptor->object().isValid()) {
+        // clang-format off
         QMetaObject::invokeMethod(const_cast<AggregatedPropertyModel *>(this), "objectInvalidated",
                                   Qt::QueuedConnection,
-                                  Q_ARG(GammaRay::PropertyAdaptor *, adaptor));
+                                  Q_ARG(GammaRay::PropertyAdaptor*, adaptor));
+        // clang-format on
         return res;
     }
     const auto d = adaptor->propertyData(index.row());
@@ -148,7 +152,7 @@ QMap<int, QVariant> AggregatedPropertyModel::itemData(const QModelIndex &index) 
     } else if (index.column() == 1) {
         res.insert(Qt::EditRole, data(adaptor, d, index.column(), Qt::EditRole));
         res.insert(Qt::DecorationRole, data(adaptor, d, index.column(), Qt::DecorationRole));
-        if (d.value().type() == QVariant::Bool)
+        if (d.value().typeId() == QMetaType::Bool)
             res.insert(Qt::CheckStateRole, data(adaptor, d, index.column(), Qt::CheckStateRole));
     }
     return res;
@@ -168,7 +172,7 @@ QVariant AggregatedPropertyModel::data(PropertyAdaptor *adaptor, const PropertyD
             const QString enumStr = EnumUtil::enumToString(d.value(), d.typeName().toLatin1(), adaptor->object().metaObject());
             if (!enumStr.isEmpty())
                 return enumStr;
-            if (d.value().type() == QVariant::Bool && (d.accessFlags() & PropertyData::Writable))
+            if (d.value().typeId() == QMetaType::Bool && (d.accessFlags() & PropertyData::Writable))
                 return QVariant();
             if (isInvalidPointer(d.value()) && Util::uncheckedQObjectCast(d.value()) != nullptr)
                 return "[invalid]";
@@ -195,7 +199,7 @@ QVariant AggregatedPropertyModel::data(PropertyAdaptor *adaptor, const PropertyD
             return VariantHandler::decoration(d.value());
         break;
     case Qt::CheckStateRole:
-        if (column == 1 && d.value().type() == QVariant::Bool && (d.accessFlags() & PropertyData::Writable))
+        if (column == 1 && d.value().typeId() == QMetaType::Bool && (d.accessFlags() & PropertyData::Writable))
             return d.value().toBool() ? Qt::Checked : Qt::Unchecked;
         break;
     case PropertyModel::ActionRole: {
@@ -248,7 +252,7 @@ bool AggregatedPropertyModel::setData(const QModelIndex &index, const QVariant &
         QPointer<GammaRay::PropertyAdaptor> guard(adaptor);
         if (value.userType() == qMetaTypeId<EnumValue>()) {
             const auto d = adaptor->propertyData(index.row());
-            if (d.value().type() == QVariant::Int) {
+            if (d.value().typeId() == QMetaType::Int) {
                 adaptor->writeProperty(index.row(), value.value<EnumValue>().value());
             } else {
                 auto v = d.value();
@@ -263,10 +267,13 @@ bool AggregatedPropertyModel::setData(const QModelIndex &index, const QVariant &
         }
         return true;
     }
-    case Qt::CheckStateRole:
+    case Qt::CheckStateRole: {
+        QPointer<GammaRay::PropertyAdaptor> guard(adaptor);
         adaptor->writeProperty(index.row(), value.toInt() == Qt::Checked);
-        propagateWrite(adaptor);
+        if (guard)
+            propagateWrite(adaptor);
         return true;
+    }
     case PropertyModel::ResetActionRole:
         adaptor->resetProperty(index.row());
         return true;
@@ -318,7 +325,7 @@ Qt::ItemFlags AggregatedPropertyModel::flags(const QModelIndex &index) const
     auto adaptor = adaptorForIndex(index);
     auto data = adaptor->propertyData(index.row());
     const auto editable = (data.accessFlags() & PropertyData::Writable) && isParentEditable(adaptor);
-    const auto booleanEditable = editable && data.value().type() == QVariant::Bool;
+    const auto booleanEditable = editable && data.value().typeId() == QMetaType::Bool;
     if (booleanEditable)
         return baseFlags | Qt::ItemIsUserCheckable;
     return editable ? (baseFlags | Qt::ItemIsEditable) : baseFlags;
@@ -357,11 +364,11 @@ void AggregatedPropertyModel::addPropertyAdaptor(PropertyAdaptor *adaptor) const
     if (!adaptor)
         return;
 
-    QVector<PropertyAdaptor *> children;
-    children.resize(adaptor->count());
-    m_parentChildrenMap.insert({ adaptor, children });
+    m_parentChildrenMap.emplace(adaptor, QVector<PropertyAdaptor *>(adaptor->count()));
     connect(adaptor, &PropertyAdaptor::propertyChanged, this, &AggregatedPropertyModel::propertyChanged);
+    connect(adaptor, &PropertyAdaptor::propertyAboutToBeAdded, this, &AggregatedPropertyModel::propertyAboutToBeAdded);
     connect(adaptor, &PropertyAdaptor::propertyAdded, this, &AggregatedPropertyModel::propertyAdded);
+    connect(adaptor, &PropertyAdaptor::propertyAboutToBeRemoved, this, &AggregatedPropertyModel::propertyAboutToBeRemoved);
     connect(adaptor, &PropertyAdaptor::propertyRemoved, this, &AggregatedPropertyModel::propertyRemoved);
 }
 
@@ -379,6 +386,21 @@ void AggregatedPropertyModel::propertyChanged(int first, int last)
         reloadSubTree(adaptor, i);
 }
 
+void AggregatedPropertyModel::propertyAboutToBeAdded(int first, int last)
+{
+    auto adaptor = qobject_cast<PropertyAdaptor *>(sender());
+    Q_ASSERT(adaptor);
+    Q_ASSERT(m_parentChildrenMap.find(adaptor) != m_parentChildrenMap.cend());
+    Q_ASSERT(first <= last);
+    Q_ASSERT(first >= 0);
+    Q_ASSERT(first <= adaptor->count());
+    Q_ASSERT(!m_pendingChangeAdaptor);
+
+    beginInsertRows(createIndex(first, 0, adaptor).parent(), first, last);
+    m_pendingChangeAdaptor = adaptor;
+}
+
+// adaptors that don't emit propertyAboutToBeAdded already report the new properties here
 void AggregatedPropertyModel::propertyAdded(int first, int last)
 {
     auto adaptor = qobject_cast<PropertyAdaptor *>(sender());
@@ -387,9 +409,12 @@ void AggregatedPropertyModel::propertyAdded(int first, int last)
     Q_ASSERT(first <= last);
     Q_ASSERT(first >= 0);
     Q_ASSERT(last < adaptor->count());
+    Q_ASSERT(!m_pendingChangeAdaptor || m_pendingChangeAdaptor == adaptor);
 
-    auto idx = createIndex(first, 0, adaptor);
-    beginInsertRows(idx.parent(), first, last);
+    const bool announced = m_pendingChangeAdaptor == adaptor;
+    m_pendingChangeAdaptor = nullptr;
+    if (!announced)
+        beginInsertRows(createIndex(first, 0, adaptor).parent(), first, last);
     auto &children = m_parentChildrenMap[adaptor];
     if (first >= children.size())
         children.resize(last + 1);
@@ -398,20 +423,44 @@ void AggregatedPropertyModel::propertyAdded(int first, int last)
     endInsertRows();
 }
 
-void AggregatedPropertyModel::propertyRemoved(int first, int last)
+void AggregatedPropertyModel::propertyAboutToBeRemoved(int first, int last)
 {
     auto adaptor = qobject_cast<PropertyAdaptor *>(sender());
-
     Q_ASSERT(adaptor);
     Q_ASSERT(m_parentChildrenMap.find(adaptor) != m_parentChildrenMap.cend());
     Q_ASSERT(first <= last);
     Q_ASSERT(first >= 0);
     Q_ASSERT(last < adaptor->count());
+    Q_ASSERT(!m_pendingChangeAdaptor);
 
-    auto idx = createIndex(first, 0, adaptor);
-    beginRemoveRows(idx.parent(), first, last);
+    beginRemoveRows(createIndex(first, 0, adaptor).parent(), first, last);
+    m_pendingChangeAdaptor = adaptor;
+}
+
+// adaptors that don't emit propertyAboutToBeRemoved already report the remaining properties here
+void AggregatedPropertyModel::propertyRemoved(int first, int last)
+{
+    auto adaptor = qobject_cast<PropertyAdaptor *>(sender());
+    Q_ASSERT(adaptor);
+    Q_ASSERT(m_parentChildrenMap.find(adaptor) != m_parentChildrenMap.cend());
+    Q_ASSERT(first <= last);
+    Q_ASSERT(first >= 0);
+    Q_ASSERT(last < m_parentChildrenMap.at(adaptor).size());
+    Q_ASSERT(!m_pendingChangeAdaptor || m_pendingChangeAdaptor == adaptor);
+
+    const bool announced = m_pendingChangeAdaptor == adaptor;
+    m_pendingChangeAdaptor = nullptr;
+    if (!announced)
+        beginRemoveRows(createIndex(first, 0, adaptor).parent(), first, last);
     auto &children = m_parentChildrenMap[adaptor];
+    const auto removed = children.mid(first, last - first + 1);
     children.remove(first, last - first + 1);
+    for (auto child : removed) {
+        if (child) {
+            forgetSubTree(child);
+            delete child;
+        }
+    }
     endRemoveRows();
 }
 
@@ -474,7 +523,7 @@ void AggregatedPropertyModel::reloadSubTree(PropertyAdaptor *parentAdaptor, int 
             beginRemoveRows(createIndex(index, 0, parentAdaptor), 0, oldRowCount - 1);
         m_parentChildrenMap[parentAdaptor][index] = nullptr;
 
-        m_parentChildrenMap.erase(oldAdaptor);
+        forgetSubTree(oldAdaptor);
         delete oldAdaptor;
         if (oldRowCount)
             endRemoveRows();
@@ -502,6 +551,21 @@ void AggregatedPropertyModel::reloadSubTree(PropertyAdaptor *parentAdaptor, int 
         endInsertRows();
 
     m_inhibitAdaptorCreation = false;
+}
+
+// Deleting an adaptor also deletes all adaptors below it, so forget about all of them. Otherwise a
+// new adaptor that gets the address of one of them would get its rows.
+void AggregatedPropertyModel::forgetSubTree(PropertyAdaptor *adaptor)
+{
+    auto it = m_parentChildrenMap.find(adaptor);
+    if (it == m_parentChildrenMap.end())
+        return;
+    const auto children = std::move(it->second);
+    m_parentChildrenMap.erase(it);
+    for (auto child : children) {
+        if (child)
+            forgetSubTree(child);
+    }
 }
 
 bool AggregatedPropertyModel::isParentEditable(PropertyAdaptor *adaptor) const

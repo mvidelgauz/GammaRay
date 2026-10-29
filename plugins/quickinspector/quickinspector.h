@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -136,6 +136,7 @@ private:
     QString findSGNodeType(QSGNode *node) const;
     static void scanForProblems();
 
+    QRectF combinedChildrenRect(QQuickItem *object) const;
     GammaRay::ObjectIds recursiveItemsAt(QQuickItem *parent, const QPointF &pos,
                                          GammaRay::RemoteViewInterface::RequestMode mode,
                                          int &bestCandidate, bool parentIsGoodCandidate = true) const;

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -29,9 +29,7 @@
 #include <QQuickWidget>
 #include <QQmlContext>
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-Q_DECLARE_METATYPE(QGeoPositionInfo)
-#endif
+#include <memory>
 
 using namespace GammaRay;
 
@@ -160,7 +158,7 @@ void PositioningWidget::loadNmeaFile()
     if (fileName.isEmpty())
         return;
 
-    QScopedPointer<QFile> file(new QFile(fileName, this));
+    std::unique_ptr<QFile> file(new QFile(fileName, this));
     if (!file->open(QFile::ReadOnly)) {
         QMessageBox::critical(this, tr("Failed to open NMEA file"), tr("Could not open '%1': %2.").arg(fileName, file->errorString()));
         return;
@@ -173,18 +171,10 @@ void PositioningWidget::loadNmeaFile()
     }
 
     m_replaySource = new QNmeaPositionInfoSource(QNmeaPositionInfoSource::SimulationMode, this);
-    m_replaySource->setDevice(file.take());
+    m_replaySource->setDevice(file.release());
     connect(m_replaySource, &QGeoPositionInfoSource::positionUpdated, this, &PositioningWidget::replayPosition);
     m_replaySource->startUpdates();
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 2, 0)
-    connect(m_replaySource, &QNmeaPositionInfoSource::updateTimeout, this, []() {
-        qDebug() << "NMEA source update timeout!";
-    });
-    connect(m_replaySource, QOverload<QGeoPositionInfoSource::Error>::of(&QGeoPositionInfoSource::error), this, &PositioningWidget::nmeaError);
-#else
     connect(m_replaySource, &QGeoPositionInfoSource::errorOccurred, this, &PositioningWidget::nmeaError);
-#endif
 }
 
 void PositioningWidget::nmeaError()

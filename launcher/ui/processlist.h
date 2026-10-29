@@ -33,6 +33,8 @@
 #ifndef GAMMARAY_PROCESSLIST_H
 #define GAMMARAY_PROCESSLIST_H
 
+#include "gammaray_launcher_ui_export.h"
+
 #include <launcher/core/probeabi.h>
 
 #include <QString>
@@ -40,7 +42,7 @@
 
 struct ProcData
 {
-    QString ppid;
+    qint64 ppid = 0;
     QString name;
     QString image;
     QString state;
@@ -60,6 +62,6 @@ struct ProcData
 
 typedef QList<ProcData> ProcDataList;
 
-extern ProcDataList processList(const ProcDataList &previous);
+GAMMARAY_LAUNCHER_UI_EXPORT ProcDataList processList(const ProcDataList &previous);
 
 #endif // PROCESSLIST_H

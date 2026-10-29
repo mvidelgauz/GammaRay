@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,8 +12,6 @@
 */
 
 #include "statemachinewatcher.h"
-
-#include <compat/qasconst.h>
 
 #include <QAbstractTransition>
 #include <QFinalState>
@@ -85,7 +83,7 @@ void StateMachineWatcher::watchState(QAbstractState *state)
 
 void StateMachineWatcher::clearWatchedStates()
 {
-    for (QAbstractState *state : qAsConst(m_watchedStates)) {
+    for (QAbstractState *state : std::as_const(m_watchedStates)) {
         disconnect(state, &QAbstractState::entered, this, &StateMachineWatcher::handleStateEntered);
         disconnect(state, &QAbstractState::exited, this, &StateMachineWatcher::handleStateExited);
         disconnect(state, &QObject::destroyed, this, &StateMachineWatcher::handleStateDestroyed);

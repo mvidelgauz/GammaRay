@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -19,34 +19,20 @@
 
 using namespace GammaRay;
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-namespace GammaRay {
-class ProtectedExposer : public QObject
-{
-public:
-    using QObject::staticQtMetaObject;
-};
-}
-#endif
-
 static const QMetaObject *metaObjectForClass(const QByteArray &name)
 {
     if (name.isEmpty())
         return nullptr;
-    auto mo = QMetaType::metaObjectForType(QMetaType::type(name));
+    auto mo = QMetaType::fromName(name).metaObject();
+    // auto mo = QMetaType::metaObjectForType(QMetaType::type(name));
     if (mo)
         return mo;
-    mo = QMetaType::metaObjectForType(QMetaType::type(name + '*')); // try pointer version, more likely for QObjects
+    mo = QMetaType::fromName(name + '*').metaObject(); // try pointer version, more likely for QObjects
     return mo;
 }
 
 static QMetaEnum flagsFromEnumIndex(int enumIndex, const QByteArray &enumName, const QMetaObject *const mo)
 {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    Q_UNUSED(enumName)
-    Q_ASSERT(false);
-    return mo->enumerator(enumIndex);
-#else
     Q_ASSERT(mo);
     // usually it should be just enumIndex + 1
     const auto count = mo->enumeratorCount();
@@ -64,7 +50,6 @@ static QMetaEnum flagsFromEnumIndex(int enumIndex, const QByteArray &enumName, c
         }
     }
     return mo->enumerator(enumIndex);
-#endif
 }
 
 QMetaEnum EnumUtil::metaEnum(const QVariant &value, const char *typeName, const QMetaObject *metaObject)
@@ -82,7 +67,6 @@ QMetaEnum EnumUtil::metaEnum(const QVariant &value, const char *typeName, const 
         className = enumTypeName.left(pos);
         enumTypeName = enumTypeName.mid(pos + 2);
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         // QVariant::typeName is no longer the flag name, but QFlags<Foo>...
         if (className.startsWith("QFlags<")) {
             className.remove(0, sizeof("QFlags<") - 1);
@@ -92,20 +76,15 @@ QMetaEnum EnumUtil::metaEnum(const QVariant &value, const char *typeName, const 
         if (enumTypeName.endsWith(">")) {
             enumTypeName.chop(1);
         }
-#endif
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     const QMetaObject *mo = &Qt::staticMetaObject;
-#else
-    const QMetaObject *mo = &ProtectedExposer::staticQtMetaObject;
-#endif
     int enumIndex = mo->indexOfEnumerator(enumTypeName);
     if (enumIndex < 0 && metaObject) {
         mo = metaObject;
         enumIndex = mo->indexOfEnumerator(enumTypeName);
     }
-    if (enumIndex < 0 && (mo = QMetaType::metaObjectForType(QMetaType::type(fullTypeName)))) {
+    if (enumIndex < 0 && (mo = QMetaType::fromName(fullTypeName).metaObject())) {
         enumIndex = mo->indexOfEnumerator(enumTypeName);
     }
     if (enumIndex < 0 && (mo = metaObjectForClass(className))) {
@@ -135,7 +114,7 @@ QMetaEnum EnumUtil::metaEnum(const QVariant &value, const char *typeName, const 
 int EnumUtil::enumToInt(const QVariant &value, const QMetaEnum &metaEnum)
 {
     // QVariant has no implicit QFlag to int conversion as of Qt 5.7
-    if (metaEnum.isFlag() && QMetaType::sizeOf(value.userType()) == sizeof(int)) // int should be enough, QFlag has that hardcoded
+    if (metaEnum.isFlag() && QMetaType(value.userType()).sizeOf() == sizeof(int)) // int should be enough, QFlag has that hardcoded
         return value.constData() ? *static_cast<const int *>(value.constData()) : 0;
     return value.toInt();
 }

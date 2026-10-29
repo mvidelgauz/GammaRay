@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Christoph Sterz <christoph.sterz@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -40,11 +40,7 @@ void TrailingColorLabel::paintEvent(QPaintEvent *event)
     const int margin = 5;
     const int squaresize = 20;
     const int height = 30;
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-    const int numberGroupWidth = metrics.width(QStringLiteral("  000"));
-#else
     const int numberGroupWidth = metrics.horizontalAdvance(QStringLiteral("  000"));
-#endif
     const int width = margin + squaresize + margin + 4 * numberGroupWidth + margin;
     setMinimumSize(QSize(width + 1, height + 1));
 

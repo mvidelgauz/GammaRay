@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -13,8 +13,6 @@
 
 #include "plugininfo.h"
 #include "paths.h"
-
-#include <compat/qasconst.h>
 
 #include <QDebug>
 #include <QDir>
@@ -96,7 +94,7 @@ static QString readLocalized(const QLocale &locale, const QJsonObject &obj, cons
     if (!qtcLanguage.isEmpty())
         names.prepend(qtcLanguage);
 
-    for (auto name : qAsConst(names)) {
+    for (auto name : std::as_const(names)) {
         const QLocale uiLocale(name);
 
         // We are natively English, skip...

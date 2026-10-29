@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -57,9 +57,8 @@ static void gammaray_pre_routine()
     if (qApp) // DllMain will do a better job at this, we are too early here and might not even have our staticMetaObject properly resolved
         return;
 #endif
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     new ProbeCreator(ProbeCreator::Create | ProbeCreator::FindExistingObjects);
-}
+} // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 Q_COREAPP_STARTUP_FUNCTION(gammaray_pre_routine)
 
 // previously installed Qt hooks, for daisy-chaining
@@ -70,12 +69,11 @@ static void (*gammaray_next_removeObject)(QObject *) = nullptr;
 extern "C" Q_DECL_EXPORT void gammaray_startup_hook()
 {
     Probe::startupHookReceived();
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     new ProbeCreator(ProbeCreator::Create);
 
     if (gammaray_next_startup_hook)
         gammaray_next_startup_hook();
-}
+} // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 extern "C" Q_DECL_EXPORT void gammaray_addObject(QObject *obj)
 {
@@ -107,6 +105,16 @@ static void installQHooks()
     qtHookData[QHooks::Startup] = reinterpret_cast<quintptr>(&gammaray_startup_hook);
 }
 
+static void uninstallQHooks()
+{
+    qtHookData[QHooks::AddQObject] = reinterpret_cast<quintptr>(gammaray_next_addObject);
+    qtHookData[QHooks::RemoveQObject] = reinterpret_cast<quintptr>(gammaray_next_removeObject);
+    qtHookData[QHooks::Startup] = reinterpret_cast<quintptr>(gammaray_next_startup_hook);
+    gammaray_next_addObject = nullptr;
+    gammaray_next_removeObject = nullptr;
+    gammaray_next_startup_hook = nullptr;
+}
+
 bool Hooks::hooksInstalled()
 {
     return qtHookData[QHooks::AddQObject] == reinterpret_cast<quintptr>(&gammaray_addObject);
@@ -120,6 +128,14 @@ void Hooks::installHooks()
     installQHooks();
 }
 
+void Hooks::uninstallHooks()
+{
+    if (!hooksInstalled())
+        return;
+
+    uninstallQHooks();
+}
+
 extern "C" Q_DECL_EXPORT void gammaray_probe_inject()
 {
     if (!qApp) {
@@ -127,19 +143,19 @@ extern "C" Q_DECL_EXPORT void gammaray_probe_inject()
     }
     Hooks::installHooks();
     log_injection("gammaray_probe_inject()\n");
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     new ProbeCreator(ProbeCreator::Create | ProbeCreator::FindExistingObjects);
-}
+} // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 extern "C" Q_DECL_EXPORT void gammaray_probe_attach()
 {
     if (!qApp) {
         return;
     }
+    // detaching put back the hooks we replaced
+    Hooks::installHooks();
     log_injection("gammaray_probe_attach()\n");
-    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
     new ProbeCreator(ProbeCreator::Create | ProbeCreator::FindExistingObjects | ProbeCreator::ResendServerAddress);
-}
+} // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 extern "C" Q_DECL_EXPORT void gammaray_install_hooks()
 {

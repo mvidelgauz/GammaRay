@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -91,7 +91,7 @@ class LegendModel : public QAbstractListModel
                 }
             }
 
-            item.pixmap = pixmap;
+            item.pixmap = std::move(pixmap);
         }
     };
 
@@ -108,7 +108,7 @@ public:
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override
     {
-        return parent.isValid() ? 0 : m_items.count();
+        return parent.isValid() ? 0 : m_items.size();
     }
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
@@ -177,7 +177,7 @@ public:
             settings.gridColor,
             QT_TR_NOOP("Grid"));
 
-        for (int i = 0; i < m_items.count(); ++i) {
+        for (int i = 0; i < m_items.size(); ++i) {
             Item::createPixmap(m_items[i]);
         }
         endResetModel();

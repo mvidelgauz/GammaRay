@@ -4,7 +4,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Thomas McGuire <thomas.mcguire@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -18,8 +18,6 @@
 #include <common/objectmodel.h>
 #include <common/objectid.h>
 #include <common/sourcelocation.h>
-
-#include <compat/qasconst.h>
 
 #include <QElapsedTimer>
 #include <QMutexLocker>
@@ -38,7 +36,7 @@
 using namespace GammaRay;
 using namespace std;
 
-static QPointer<TimerModel> s_timerModel;
+Q_GLOBAL_STATIC(QPointer<TimerModel>, s_timerModel)
 static const char s_qmlTimerClassName[] = "QQmlTimer";
 static const int s_maxTimeoutEvents = 1000;
 static const int s_maxTimeSpan = 10000;
@@ -195,7 +193,7 @@ const TimerIdInfo *TimerModel::findTimerInfo(const QModelIndex &index) const
 
         return &it.value();
     }
-    if (index.row() < m_sourceModel->rowCount() + m_freeTimersInfo.count()) {
+    if (index.row() < m_sourceModel->rowCount() + m_freeTimersInfo.size()) {
         return &m_freeTimersInfo[index.row() - m_sourceModel->rowCount()];
     }
 
@@ -300,12 +298,13 @@ bool TimerModel::eventNotifyCallback(void *data[])
         }
 
         {
-            QMutexLocker locker(&s_timerModel->m_mutex);
+            auto timerModel = s_timerModel->data();
+            QMutexLocker locker(&timerModel->m_mutex);
             const TimerId id(timerEvent->timerId(), receiver);
-            auto it = s_timerModel->m_gatheredTimersData.find(id);
+            auto it = timerModel->m_gatheredTimersData.find(id);
 
-            if (it == s_timerModel->m_gatheredTimersData.end()) {
-                it = s_timerModel->m_gatheredTimersData.insert(id, TimerIdData());
+            if (it == timerModel->m_gatheredTimersData.end()) {
+                it = timerModel->m_gatheredTimersData.insert(id, TimerIdData());
             }
 
             const TimeoutEvent timeoutEvent(QTime::currentTime(), -1);
@@ -313,8 +312,8 @@ bool TimerModel::eventNotifyCallback(void *data[])
             it.value().update(id, receiver);
             it.value().addEvent(timeoutEvent);
 
-            s_timerModel->checkDispatcherStatus(receiver);
-            s_timerModel->m_triggerPushChangesMethod.invoke(s_timerModel, Qt::QueuedConnection);
+            timerModel->checkDispatcherStatus(receiver);
+            timerModel->m_triggerPushChangesMethod.invoke(timerModel, Qt::QueuedConnection);
         }
     }
 
@@ -337,11 +336,12 @@ bool TimerModel::isInitialized()
 
 TimerModel *TimerModel::instance()
 {
-    if (!s_timerModel)
-        s_timerModel = new TimerModel;
+    if (s_timerModel->isNull()) {
+        *s_timerModel = new TimerModel;
+    }
 
     Q_ASSERT(s_timerModel);
-    return s_timerModel;
+    return s_timerModel->data();
 }
 
 void TimerModel::preSignalActivate(QObject *caller, int methodIndex)
@@ -464,7 +464,7 @@ int TimerModel::rowCount(const QModelIndex &parent) const
     Q_UNUSED(parent);
     if (!m_sourceModel || parent.isValid())
         return 0;
-    return m_sourceModel->rowCount() + m_freeTimersInfo.count();
+    return m_sourceModel->rowCount() + m_freeTimersInfo.size();
 }
 
 QVariant TimerModel::data(const QModelIndex &index, int role) const
@@ -566,7 +566,7 @@ void TimerModel::clearHistory()
     }
 
     if (!m_freeTimersInfo.isEmpty()) {
-        beginRemoveRows(QModelIndex(), m_sourceModel->rowCount(), m_sourceModel->rowCount() + m_freeTimersInfo.count() - 1);
+        beginRemoveRows(QModelIndex(), m_sourceModel->rowCount(), m_sourceModel->rowCount() + m_freeTimersInfo.size() - 1);
         m_freeTimersInfo.clear();
         endRemoveRows();
     }
@@ -691,7 +691,7 @@ void TimerModel::applyChanges(const TimerIdInfoContainer &changes)
 
     // Fill new free timers to insert
     QVector<TimerIdInfo> freeTimersToInsert;
-    freeTimersToInsert.reserve(changes.count() - updatedIds.count());
+    freeTimersToInsert.reserve(changes.size() - updatedIds.size());
     for (auto it = changes.constBegin(), end = changes.constEnd(); it != end; ++it) {
         if (updatedIds.contains(it.key()))
             continue;
@@ -704,14 +704,14 @@ void TimerModel::applyChanges(const TimerIdInfoContainer &changes)
     }
 
     // Inform model about data changes
-    for (const auto &range : qAsConst(dataChangedRanges)) {
+    for (const auto &range : std::as_const(dataChangedRanges)) {
         emit dataChanged(index(range.first, 0), index(range.second, columnCount() - 1));
     }
 
     // Inform model about new rows
     if (!freeTimersToInsert.isEmpty()) {
-        const int first = m_sourceModel->rowCount() + m_freeTimersInfo.count();
-        const int last = m_sourceModel->rowCount() + m_freeTimersInfo.count() + freeTimersToInsert.count() - 1;
+        const int first = m_sourceModel->rowCount() + m_freeTimersInfo.size();
+        const int last = m_sourceModel->rowCount() + m_freeTimersInfo.size() + freeTimersToInsert.size() - 1;
         beginInsertRows(QModelIndex(), first, last);
         m_freeTimersInfo << freeTimersToInsert;
         endInsertRows();

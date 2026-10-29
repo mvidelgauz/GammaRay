@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2018-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2018 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -19,7 +19,7 @@ using namespace GammaRay;
 
 struct location_info_t
 {
-    QLibraryInfo::LibraryLocation loc;
+    QLibraryInfo::LibraryPath loc;
     const char *name;
 };
 
@@ -35,9 +35,6 @@ static const location_info_t locInfoTable[] = {
     L(LibraryExecutablesPath),
     L(BinariesPath),
     L(PluginsPath),
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    L(ImportsPath),
-#endif
     L(Qml2ImportsPath),
     L(ArchDataPath),
     L(DataPath),
@@ -77,7 +74,7 @@ QVariant LibraryInfoModel::data(const QModelIndex &index, int role) const
         case 0:
             return locInfoTable[index.row()].name;
         case 1:
-            return QLibraryInfo::location(locInfoTable[index.row()].loc);
+            return QLibraryInfo::path(locInfoTable[index.row()].loc);
         }
     }
 

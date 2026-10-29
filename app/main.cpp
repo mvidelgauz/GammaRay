@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -105,9 +105,6 @@ int main(int argc, char **argv)
     QCoreApplication::setOrganizationDomain("kdab.com");
     QCoreApplication::setApplicationName("GammaRay");
     QCoreApplication::setApplicationVersion(GAMMARAY_COMPACT_VERSION_STRING);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0) && QT_VERSION <= QT_VERSION_CHECK(6, 0, 0)
-    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-#endif
     QApplication::setQuitOnLastWindowClosed(false);
 
     QApplication app(argc, argv);

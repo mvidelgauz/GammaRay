@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -15,6 +15,8 @@
 #include "probecreator.h"
 
 #include <common/endpoint.h>
+#include "hooks.h"
+
 #include <core/probe.h>
 
 #include <QCoreApplication>
@@ -39,9 +41,9 @@ ProbeCreator::ProbeCreator(CreateFlags flags)
     QMetaObject::invokeMethod(this, "createProbe", Qt::QueuedConnection);
 
     // don't propagate the probe to child processes
-    if (qgetenv("GAMMARAY_UNSET_PRELOAD") == "1")
+    if (qEnvironmentVariableIntValue("GAMMARAY_UNSET_PRELOAD") == 1)
         qputenv("LD_PRELOAD", "");
-    if (qgetenv("GAMMARAY_UNSET_DYLD") == "1")
+    if (qEnvironmentVariableIntValue("GAMMARAY_UNSET_DYLD") == 1)
         qputenv("DYLD_INSERT_LIBRARIES", "");
 
     // HACK the webinspector plugin does this as well, but if the web view is created
@@ -74,6 +76,8 @@ void ProbeCreator::createProbe()
 
     Probe::createProbe(m_flags & FindExistingObjects);
     Q_ASSERT(Probe::isInitialized());
+    // when detaching, put back the hooks we replaced, attaching again installs them again
+    connect(Probe::instance(), &Probe::aboutToDetach, Probe::instance(), &Hooks::uninstallHooks);
 
     deleteLater();
 }

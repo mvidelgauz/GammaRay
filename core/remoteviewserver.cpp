@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -23,11 +23,9 @@
 #include <QTimer>
 #include <QWindow>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <private/qeventpoint_p.h>
 #include <private/qevent_p.h>
 #include <private/qpointingdevice_p.h>
-#endif
 
 using namespace GammaRay;
 
@@ -149,7 +147,7 @@ void RemoteViewServer::sendMouseEvent(int type, const QPoint &localPos, int butt
     if (!m_eventReceiver)
         return;
 
-    auto event = new QMouseEvent(( QEvent::Type )type, localPos, ( Qt::MouseButton )button,
+    auto event = new QMouseEvent(( QEvent::Type )type, localPos, m_eventReceiver->mapToGlobal(localPos), ( Qt::MouseButton )button,
                                  ( Qt::MouseButtons )buttons, ( Qt::KeyboardModifiers )modifiers);
     QCoreApplication::postEvent(m_eventReceiver, event);
 }
@@ -160,51 +158,37 @@ void RemoteViewServer::sendWheelEvent(const QPoint &localPos, QPoint pixelDelta,
     if (!m_eventReceiver)
         return;
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
+#if QT_CONFIG(wheelevent)
     auto event = new QWheelEvent(localPos, m_eventReceiver->mapToGlobal(localPos), pixelDelta, angleDelta, ( Qt::MouseButtons )buttons,
                                  ( Qt::KeyboardModifiers )modifiers, Qt::NoScrollPhase, false);
-#else
-    auto event = new QWheelEvent(localPos, m_eventReceiver->mapToGlobal(localPos), pixelDelta, angleDelta, 0, /*not used*/ Qt::Vertical,
-                                 /*not used*/ ( Qt::MouseButtons )buttons,
-                                 ( Qt::KeyboardModifiers )modifiers);
-#endif
     QCoreApplication::postEvent(m_eventReceiver, event);
+#else
+    qWarning() << Q_FUNC_INFO << "QWheelEvent is not supported";
+#endif
 }
 
-void RemoteViewServer::sendTouchEvent(int type, int touchDeviceType, int deviceCaps, int touchDeviceMaxTouchPoints,
-                                      int modifiers, int touchPointStates, const QList<QTouchEvent::TouchPoint> &touchPoints)
+void RemoteViewServer::sendTouchEvent(const QString &deviceName, int deviceSystemId, int type, int touchDeviceType, int deviceCaps, int touchDeviceMaxTouchPoints, int modifiers,
+                                      const QList<QTouchEvent::TouchPoint> &touchPoints)
 {
     if (!m_eventReceiver)
         return;
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (!m_touchDevice) {
         // create our own touch device, the system may not have one already, or it may not have
         // the properties we want
-        m_touchDevice.reset(new QPointingDevice);
+
+        m_touchDevice.reset(new QPointingDevice(deviceName, deviceSystemId,
+                                                QPointingDevice::DeviceType(touchDeviceType), QPointingDevice::PointerType::Generic, QPointingDevice::Capabilities(deviceCaps),
+                                                touchDeviceMaxTouchPoints, 1));
     }
-    m_touchDevice->setType(QPointingDevice::DeviceType(touchDeviceType));
-    m_touchDevice->setCapabilities(QPointingDevice::Capabilities(deviceCaps));
-    m_touchDevice->setMaximumTouchPoints(touchDeviceMaxTouchPoints);
 
-    const QEventPoint::States states(touchPointStates);
-    QTouchEvent event(QEvent::Type(type), m_touchDevice.get(), Qt::KeyboardModifiers(modifiers), states, touchPoints);
+    QTouchEvent event(QEvent::Type(type), m_touchDevice.get(), Qt::KeyboardModifiers(modifiers), touchPoints);
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 9, 0))
+    QMutableTouchEvent::setTarget(&event, m_eventReceiver);
+#else
     auto *mut = QMutableTouchEvent::from(&event);
     mut->setTarget(m_eventReceiver);
-#else
-    if (!m_touchDevice) {
-        // create our own touch device, the system may not have one already, or it may not have
-        // the properties we want
-        m_touchDevice.reset(new QTouchDevice);
-    }
-    m_touchDevice->setType(QTouchDevice::DeviceType(touchDeviceType));
-    m_touchDevice->setCapabilities(QTouchDevice::CapabilityFlag(deviceCaps));
-    m_touchDevice->setMaximumTouchPoints(touchDeviceMaxTouchPoints);
-
-    const Qt::TouchPointStates states(touchPointStates);
-    QTouchEvent event(QEvent::Type(type), m_touchDevice.get(), Qt::KeyboardModifiers(modifiers), states, touchPoints);
-    event.setWindow(m_eventReceiver);
 #endif
 
     QCoreApplication::sendEvent(m_eventReceiver, &event);

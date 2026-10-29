@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -54,6 +54,10 @@ void BindingExtension::clear()
 
 bool BindingExtension::setQObject(QObject *object)
 {
+    // re-creating the binding tree for the same object would free the nodes the model still uses
+    if (object && object == m_object)
+        return true;
+
     if (m_object)
         disconnect(m_object, nullptr, this, nullptr);
 
@@ -73,6 +77,8 @@ bool BindingExtension::setQObject(QObject *object)
             }
         }
         connect(object, &QObject::destroyed, this, &BindingExtension::clear);
+    } else {
+        m_bindings.clear();
     }
 
     m_bindingModel->setObject(object, m_bindings);

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -39,7 +39,7 @@ QVariant ClientToolModel::data(const QModelIndex &index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    const ToolInfo &tool = m_toolManager->tools().at(index.row());
+    const ToolInfo tool = m_toolManager->tools().at(index.row());
     switch (role) {
     case Qt::DisplayRole:
         return tool.name();
@@ -89,7 +89,7 @@ Qt::ItemFlags ClientToolModel::flags(const QModelIndex &index) const
     if (!index.isValid())
         return flags;
 
-    const auto &tool = m_toolManager->tools().at(index.row());
+    const auto tool = m_toolManager->tools().at(index.row());
     if (!tool.isEnabled() || (!tool.remotingSupported() && Endpoint::instance()->isRemoteClient()))
         flags &= ~(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
     return flags;
@@ -99,7 +99,7 @@ int ClientToolModel::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
         return 0;
-    return m_toolManager->tools().count();
+    return m_toolManager->tools().size();
 }
 
 

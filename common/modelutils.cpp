@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -35,7 +35,7 @@ QModelIndexList ModelUtils::match(const QModelIndex &start, int role, MatchAccep
 
     // iterates twice if wrapping
     for (int i = 0; (wrap && i < 2) || (!wrap && i < 1); ++i) {
-        for (int r = from; (r < to) && (allHits || result.count() < hits); ++r) {
+        for (int r = from; (r < to) && (allHits || result.size() < hits); ++r) {
             QModelIndex idx = model->index(r, start.column(), parentIndex);
             if (!idx.isValid())
                 continue;
@@ -47,7 +47,7 @@ QModelIndexList ModelUtils::match(const QModelIndex &start, int role, MatchAccep
             // search the hierarchy
             if (recurse && model->hasChildren(idx)) {
                 result += match(model->index(0, idx.column(), idx), role,
-                                accept, (allHits ? -1 : hits - result.count()), flags);
+                                accept, (allHits ? -1 : hits - result.size()), flags);
             }
         }
 

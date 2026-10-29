@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -26,7 +26,7 @@ struct pixel_metric_t
 
 #define MAKE_PM(metric)         \
     {                           \
-#metric, QStyle::metric \
+        #metric, QStyle::metric \
     }
 
 static const pixel_metric_t pixelMetrics[] = {
@@ -71,9 +71,11 @@ static const pixel_metric_t pixelMetrics[] = {
     MAKE_PM(PM_IndicatorHeight),
     MAKE_PM(PM_ExclusiveIndicatorWidth),
     MAKE_PM(PM_ExclusiveIndicatorHeight),
+#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
     MAKE_PM(PM_DialogButtonsSeparator),
     MAKE_PM(PM_DialogButtonsButtonWidth),
     MAKE_PM(PM_DialogButtonsButtonHeight),
+#endif
     MAKE_PM(PM_MdiSubWindowFrameWidth),
     MAKE_PM(PM_MdiSubWindowMinimizedWidth),
     MAKE_PM(PM_HeaderMargin),
@@ -89,11 +91,6 @@ static const pixel_metric_t pixelMetrics[] = {
     MAKE_PM(PM_ToolBarSeparatorExtent),
     MAKE_PM(PM_ToolBarExtensionExtent),
     MAKE_PM(PM_SpinBoxSliderHeight),
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    MAKE_PM(PM_DefaultTopLevelMargin),
-    MAKE_PM(PM_DefaultChildMargin),
-    MAKE_PM(PM_DefaultLayoutSpacing),
-#endif
     MAKE_PM(PM_ToolBarIconSize),
     MAKE_PM(PM_ListViewIconSize),
     MAKE_PM(PM_IconViewIconSize),
@@ -125,10 +122,8 @@ static const pixel_metric_t pixelMetrics[] = {
     MAKE_PM(PM_TreeViewIndentation),
     MAKE_PM(PM_HeaderDefaultSectionSizeHorizontal),
     MAKE_PM(PM_HeaderDefaultSectionSizeVertical),
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     MAKE_PM(PM_TitleBarButtonIconSize),
     MAKE_PM(PM_TitleBarButtonSize),
-#endif
 };
 
 PixelMetricModel::PixelMetricModel(QObject *parent)
@@ -186,7 +181,7 @@ bool PixelMetricModel::setData(const QModelIndex &index, const QVariant &value, 
     if (!index.isValid()
         || index.column() != 1
         || !value.isValid()
-        || !value.canConvert(QVariant::Int)
+        || !value.canConvert(QMetaType(QMetaType::Int))
         || role != Qt::EditRole)
         return false;
 

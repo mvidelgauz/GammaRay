@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2019-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2019 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -29,12 +29,7 @@
 #include <QBuffer>
 #include <QXmlStreamReader>
 #include <QLabel>
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QTextCodec>
-#else
 #include <QStringDecoder>
-#endif
 
 using namespace GammaRay;
 
@@ -112,24 +107,12 @@ NetworkReplyWidget::NetworkReplyWidget(QWidget *parent)
             break;
         }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         QStringDecoder decoder(QStringDecoder::Utf8);
         QByteArrayView bav(response.constData(), response.size());
         const QString text = decoder.decode(bav);
         if (!decoder.hasError()) {
             ui->responseTextEdit->setPlainText(text);
         }
-#else
-
-            QTextCodec::ConverterState state;
-            QTextCodec *codec = QTextCodec::codecForName("UTF-8");
-            const QString text = codec->toUnicode(response.constData(), response.size(), &state);
-            if (state.invalidChars > 0) {
-                ui->responseTextEdit->setPlainText(tr("%1: Unable to show response preview").arg(qApp->applicationName()));
-            } else {
-                ui->responseTextEdit->setPlainText(text);
-            }
-#endif
     });
     ui->responseTextEdit->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     connect(ui->responseTextEdit, &QPlainTextEdit::textChanged, this, [this]() {
@@ -138,9 +121,6 @@ NetworkReplyWidget::NetworkReplyWidget(QWidget *parent)
     connect(ui->captureResponse, &QCheckBox::toggled, interface, [interface](bool checked) {
         interface->setProperty("captureResponse", checked);
     });
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-    ui->captureResponse->setVisible(false);
-#endif
 }
 
 NetworkReplyWidget::~NetworkReplyWidget() = default;

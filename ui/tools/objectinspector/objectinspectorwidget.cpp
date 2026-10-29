@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -52,7 +52,7 @@ ObjectInspectorWidget::ObjectInspectorWidget(QWidget *parent)
     connect(selectionModel, &QItemSelectionModel::selectionChanged,
             this, &ObjectInspectorWidget::objectSelectionChanged);
 
-    if (qgetenv("GAMMARAY_TEST_FILTER") == "1") {
+    if (qEnvironmentVariableIntValue("GAMMARAY_TEST_FILTER") == 1) {
         QMetaObject::invokeMethod(ui->objectSearchLine, "setText",
                                   Qt::QueuedConnection,
                                   Q_ARG(QString, QStringLiteral("Object")));

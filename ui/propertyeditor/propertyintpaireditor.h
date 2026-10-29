@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -43,7 +43,7 @@ protected:
 class PropertyPointEditor : public PropertyIntPairEditor
 {
     Q_OBJECT
-    Q_PROPERTY(QPoint point READ point WRITE setPoint USER true)
+    Q_PROPERTY(QPoint point READ point WRITE setPoint USER true) // clazy:exclude=qproperty-without-notify
 public:
     explicit PropertyPointEditor(QWidget *parent = nullptr);
 
@@ -55,7 +55,7 @@ public:
 class PropertySizeEditor : public PropertyIntPairEditor
 {
     Q_OBJECT
-    Q_PROPERTY(QSize sizeValue READ sizeValue WRITE setSizeValue USER true)
+    Q_PROPERTY(QSize sizeValue READ sizeValue WRITE setSizeValue USER true) // clazy:exclude=qproperty-without-notify
 public:
     explicit PropertySizeEditor(QWidget *parent = nullptr);
 

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -72,7 +72,7 @@ private slots:
             QVERIFY(launcher.start());
 
             spy.wait(30000);
-            QCOMPARE(spy.count(), 1);
+            QCOMPARE(spy.size(), 1);
 
             m_serverUrl = launcher.serverAddress();
             QVERIFY(m_serverUrl.isValid());
@@ -111,7 +111,7 @@ private slots:
                 }
             }
 
-            QVERIFY(spyReady.count() == 1);
+            QVERIFY(spyReady.size() == 1);
             QVERIFY(Endpoint::isConnected());
             QCOMPARE(m_process.processId(), Endpoint::instance()->pid());
             QVERIFY(spyError.isEmpty());
@@ -120,7 +120,7 @@ private slots:
             connector.disconnectFromHost();
             QTest::qWait(1);
 
-            QVERIFY(spyDisconnected.count() == 1);
+            QVERIFY(spyDisconnected.size() == 1);
             QVERIFY(!Endpoint::isConnected());
         }
     }

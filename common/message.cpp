@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -224,7 +224,7 @@ void Message::write(QIODevice *device) const
 {
     Q_ASSERT(m_objectAddress != Protocol::InvalidObjectAddress);
     Q_ASSERT(m_messageType != Protocol::InvalidMessageType);
-    static const bool compressionEnabled = qgetenv("GAMMARAY_DISABLE_LZ4") != "1";
+    static const bool compressionEnabled = qEnvironmentVariableIntValue("GAMMARAY_DISABLE_LZ4") != 1;
     const int buffSize = m_buffer->data.size();
     auto &compressedData = m_buffer->scratchSpace;
     if (buffSize > minimumUncompressedSize && compressionEnabled)

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -85,12 +85,7 @@ void ProbeSettingsReceiver::run()
 
     m_socket = new QLocalSocket;
     connect(m_socket, &QLocalSocket::disconnected, this, &ProbeSettingsReceiver::settingsReceivedFallback);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     connect(m_socket, &QLocalSocket::errorOccurred, this, &ProbeSettingsReceiver::settingsReceivedFallback);
-#else
-    connect(m_socket, static_cast<void (QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error),
-            this, &ProbeSettingsReceiver::settingsReceivedFallback);
-#endif
     connect(m_socket, &QIODevice::readyRead, this, &ProbeSettingsReceiver::readyRead);
     m_socket->connectToServer(QStringLiteral("gammaray-")
                               + QString::number(ProbeSettings::launcherIdentifier()));
@@ -144,6 +139,16 @@ void ProbeSettingsReceiver::readyRead()
     }
 }
 
+static void waitForBytesWritten(QLocalSocket &socket)
+{
+    while (socket.state() == QLocalSocket::ConnectedState && socket.bytesToWrite() > 0) {
+        if (!socket.waitForBytesWritten()) {
+            qWarning() << Q_FUNC_INFO << "Failed to wait for bytes written";
+            break;
+        }
+    }
+}
+
 void ProbeSettingsReceiver::sendServerAddress(const QUrl &address)
 {
     if (!m_socket || m_socket->state() != QLocalSocket::ConnectedState)
@@ -153,7 +158,7 @@ void ProbeSettingsReceiver::sendServerAddress(const QUrl &address)
     msg << address;
     msg.write(m_socket);
 
-    m_socket->waitForBytesWritten();
+    waitForBytesWritten(*m_socket);
     m_socket->close();
 
     deleteLater();
@@ -170,7 +175,7 @@ void ProbeSettingsReceiver::sendServerLaunchError(const QString &reason)
     msg << reason;
     msg.write(m_socket);
 
-    m_socket->waitForBytesWritten();
+    waitForBytesWritten(*m_socket);
     m_socket->close();
 
     deleteLater();
@@ -225,8 +230,10 @@ static QVariant getPackageMetaData(const QString &key, const QVariant &defaultVa
 QVariant ProbeSettings::value(const QString &key, const QVariant &defaultValue)
 {
     QByteArray v = s_probeSettings()->settings.value(key.toUtf8());
-    if (v.isEmpty())
-        v = qgetenv("GAMMARAY_" + key.toLocal8Bit());
+    if (v.isEmpty()) {
+        const QByteArray cstr = "GAMMARAY_" + key.toLocal8Bit();
+        v = qgetenv(cstr);
+    }
 
 #ifdef QT_ANDROIDEXTRAS_LIB
     if (v.isEmpty()) {
@@ -237,12 +244,12 @@ QVariant ProbeSettings::value(const QString &key, const QVariant &defaultValue)
     if (v.isEmpty())
         return defaultValue;
 
-    switch (defaultValue.type()) {
-    case QVariant::String:
+    switch (defaultValue.typeId()) {
+    case QMetaType::QString:
         return QString::fromUtf8(v);
-    case QVariant::Bool:
+    case QMetaType::Bool:
         return v == "true" || v == "1" || v == "TRUE";
-    case QVariant::Int:
+    case QMetaType::Int:
         return v.toInt();
     default:
         return v;

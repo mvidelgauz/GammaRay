@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -32,15 +32,9 @@ public:
     explicit GeoPositionInfoSourceFactory(QObject *parent = nullptr);
     ~GeoPositionInfoSourceFactory() override;
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    QGeoPositionInfoSource *positionInfoSource(QObject *parent) override;
-    QGeoSatelliteInfoSource *satelliteInfoSource(QObject *parent) override;
-    QGeoAreaMonitorSource *areaMonitor(QObject *parent) override;
-#else
     QGeoPositionInfoSource *positionInfoSource(QObject *parent, const QVariantMap &parameters) override;
     QGeoSatelliteInfoSource *satelliteInfoSource(QObject *parent, const QVariantMap &parameters) override;
     QGeoAreaMonitorSource *areaMonitor(QObject *parent, const QVariantMap &parameters) override;
-#endif
 
 private:
     QFactoryLoader *m_factoryLoader;

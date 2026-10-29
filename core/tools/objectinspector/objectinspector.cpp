@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -29,10 +29,10 @@
 #include <common/objectbroker.h>
 #include <common/objectmodel.h>
 #include <core/bindingaggregator.h>
+#include <core/objecttreemodel.h>
 #include <core/problemcollector.h>
 #include <core/util.h>
 #include <remote/serverproxymodel.h>
-#include <common/recursiveproxymodelbase.h>
 
 #include <QCoreApplication>
 #include <QItemSelectionModel>
@@ -52,11 +52,11 @@ ObjectInspector::ObjectInspector(Probe *probe, QObject *parent)
                                                       "com.kdab.GammaRay.ObjectInspector"),
                                                   this);
 
-    auto proxy = new ServerProxyModel<RecursiveProxyModelBase>(this);
-    proxy->setSourceModel(probe->objectTreeModel());
-    probe->registerModel(QStringLiteral("com.kdab.GammaRay.ObjectInspectorTree"), proxy);
+    m_proxy = new ServerProxyModel<QSortFilterProxyModel>(this);
+    m_proxy->setSourceModel(probe->objectTreeModel());
+    probe->registerModel(QStringLiteral("com.kdab.GammaRay.ObjectInspectorTree"), m_proxy);
 
-    m_selectionModel = ObjectBroker::selectionModel(proxy);
+    m_selectionModel = ObjectBroker::selectionModel(m_proxy);
 
     connect(m_selectionModel,
             &QItemSelectionModel::selectionChanged,
@@ -99,15 +99,17 @@ void ObjectInspector::modelIndexSelected(const QModelIndex &index)
 
 void ObjectInspector::objectSelected(QObject *object)
 {
-    const QAbstractItemModel *model = m_selectionModel->model();
-    const QModelIndexList indexList = model->match(model->index(0, 0),
-                                                   ObjectModel::ObjectRole,
-                                                   QVariant::fromValue<QObject *>(object), 1,
-                                                   Qt::MatchExactly | Qt::MatchRecursive | Qt::MatchWrap);
-    if (indexList.isEmpty())
+    // the object tree knows where the object is, searching the whole tree for it takes long
+    const auto treeModel = static_cast<ObjectTreeModel *>(Probe::instance()->objectTreeModel());
+    const auto treeIndex = treeModel->indexForObject(object);
+    if (!treeIndex.isValid())
+        return;
+    // the proxy only uses the object tree while it is used itself
+    Model::used(m_proxy);
+    const QModelIndex index = m_proxy->mapFromSource(treeIndex);
+    if (!index.isValid())
         return;
 
-    const QModelIndex index = indexList.first();
     m_selectionModel->select(
         index,
         QItemSelectionModel::Select | QItemSelectionModel::Clear
@@ -244,7 +246,7 @@ void ObjectInspector::scanForThreadAffinityIssues()
             problem.description = QStringLiteral("The object %1 has thread %2 as parent, but doesn't have affinity with it.").arg(objectName, parentName);
             problem.object = ObjectId(object);
             problem.locations.append(probe->objectCreationSourceLocation(object));
-            problem.problemId = QStringLiteral("com.kdab.GammaRay.ObjectInspector.ThreadAffinityCheck.Parent.%1")
+            problem.problemId = QStringLiteral("com.kdab.GammaRay.ObjectInspector.ThreadAffinityCheck.Parent.%1:%2")
                                     .arg(QString::number(reinterpret_cast<quintptr>(object)),
                                          QString::number(reinterpret_cast<quintptr>(parent)));
             problem.findingCategory = Problem::Scan;

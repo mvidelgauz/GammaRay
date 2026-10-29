@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -31,11 +31,11 @@ struct control_element_t
 
 #define MAKE_CE(control)                                         \
     {                                                            \
-#control, QStyle::control, &StyleOption::makeStyleOption \
+        #control, QStyle::control, &StyleOption::makeStyleOption \
     }
 #define MAKE_CE_X(control, factory)                      \
     {                                                    \
-#control, QStyle::control, &StyleOption::factory \
+        #control, QStyle::control, &StyleOption::factory \
     }
 
 static const control_element_t controlElements[] = {

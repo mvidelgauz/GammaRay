@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -29,13 +29,13 @@ QVariant MetaTypesClientModel::data(const QModelIndex &index, int role) const
 {
     if (role == Qt::DisplayRole && (index.column() == 5 || index.column() == 6)) {
         const auto v = QIdentityProxyModel::data(index, Qt::DisplayRole);
-        const auto b = v.type() == QVariant::Bool && v.toBool();
+        const auto b = v.typeId() == QMetaType::Bool && v.toBool();
         if (b && qApp->style()->standardIcon(QStyle::SP_DialogYesButton).isNull())
             return tr("yes");
         return QVariant();
     } else if (role == Qt::DecorationRole && (index.column() == 5 || index.column() == 6)) {
         const auto v = QIdentityProxyModel::data(index, Qt::DisplayRole);
-        const auto b = v.type() == QVariant::Bool && v.toBool();
+        const auto b = v.typeId() == QMetaType::Bool && v.toBool();
         return b ? qApp->style()->standardIcon(QStyle::SP_DialogYesButton) : QVariant();
     }
     return QIdentityProxyModel::data(index, role);

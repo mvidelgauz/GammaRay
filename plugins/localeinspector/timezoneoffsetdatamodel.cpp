@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -55,7 +55,7 @@ void TimezoneOffsetDataModel::setTimezone(const QTimeZone &tz)
 
     if (!offsets.isEmpty()) {
         beginInsertRows(QModelIndex(), 0, offsets.size() - 1);
-        m_offsets = offsets;
+        m_offsets = std::move(offsets);
         endInsertRows();
     }
 }
@@ -79,7 +79,7 @@ QVariant TimezoneOffsetDataModel::data(const QModelIndex &index, int role) const
         return QVariant();
 
     if (role == Qt::DisplayRole) {
-        const auto offset = m_offsets.at(index.row());
+        const auto &offset = m_offsets.at(index.row());
         switch (index.column()) {
         case 0:
             return offset.atUtc;

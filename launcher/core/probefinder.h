@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -46,6 +46,18 @@ GAMMARAY_LAUNCHER_EXPORT ProbeABI findBestMatchingABI(const ProbeABI &targetABI)
  */
 GAMMARAY_LAUNCHER_EXPORT ProbeABI findBestMatchingABI(const ProbeABI &targetABI,
                                                       const QVector<ProbeABI> &availableABIs);
+
+/*!
+ * Explains why none of the installed probes is compatible with @p targetABI.
+ * Returns an empty string if there is a compatible one.
+ */
+GAMMARAY_LAUNCHER_EXPORT QString mismatchReason(const ProbeABI &targetABI);
+/*!
+ * Explains why none of @p availableABIs is compatible with @p targetABI.
+ * Returns an empty string if there is a compatible one.
+ */
+GAMMARAY_LAUNCHER_EXPORT QString mismatchReason(const ProbeABI &targetABI,
+                                                const QVector<ProbeABI> &availableABIs);
 
 /*!
  * List all available probe ABIs.

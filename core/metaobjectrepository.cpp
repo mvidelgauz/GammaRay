@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -24,6 +24,9 @@
 #include <QFile>
 #include <QObject>
 #include <private/qobject_p.h>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+#include <private/qcoreevent_p.h>
+#endif
 #include <QSortFilterProxyModel>
 #include <QStringList>
 #include <QThread>
@@ -132,11 +135,17 @@ void MetaObjectRepository::initQObjectTypes()
     MO_ADD_PROPERTY_RO(QDateTime, isNull);
     MO_ADD_PROPERTY_RO(QDateTime, isValid);
     MO_ADD_PROPERTY_RO(QDateTime, offsetFromUtc);
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
     MO_ADD_PROPERTY(QDateTime, timeZone, setTimeZone);
+#endif
 
     MO_ADD_METAOBJECT0(QTimeZone);
     MO_ADD_PROPERTY_RO(QTimeZone, comment);
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
     MO_ADD_PROPERTY_RO(QTimeZone, country);
+#else
+    MO_ADD_PROPERTY_RO(QTimeZone, territory);
+#endif
     MO_ADD_PROPERTY_RO(QTimeZone, hasDaylightTime);
     MO_ADD_PROPERTY_RO(QTimeZone, hasTransitions);
     MO_ADD_PROPERTY_RO(QTimeZone, id);
@@ -182,11 +191,7 @@ void MetaObjectRepository::initIOTypes()
     MO_ADD_PROPERTY_RO(QFileDevice, permissions);
 
     MO_ADD_METAOBJECT1(QFile, QFileDevice);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     mo->addProperty(GammaRay::MetaPropertyFactory::makeProperty<QFile, bool>("exists", &QFile::exists));
-#else
-    MO_ADD_PROPERTY_RO(QFile, exists);
-#endif
     MO_ADD_PROPERTY_RO(QFile, symLinkTarget);
 
     MO_ADD_METAOBJECT1(QSaveFile, QFileDevice);
@@ -218,7 +223,9 @@ void MetaObjectRepository::initQEventTypes()
     MO_ADD_PROPERTY_RO(QDeferredDeleteEvent, loopLevel);
 
     MO_ADD_METAOBJECT1(QMetaCallEvent, QEvent);
+#if QT_VERSION < QT_VERSION_CHECK(6, 11, 0)
     MO_ADD_PROPERTY_RO(QMetaCallEvent, id);
+#endif
     MO_ADD_PROPERTY_RO(QMetaCallEvent, sender); // problematic because type is const QObject*
     MO_ADD_PROPERTY_RO(QMetaCallEvent, signalId);
 }
@@ -283,5 +290,6 @@ void MetaObjectRepository::clear()
 {
     qDeleteAll(m_metaObjects);
     m_metaObjects.clear();
+    m_derivedTypes.clear();
     m_initialized = false;
 }

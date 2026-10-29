@@ -1,11 +1,12 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
+
 # generate the class icon index map
 file(READ "../ui/resources/classiconindex.map" _map_content)
 string(REPLACE "\n" ";" _map_content ${_map_content})
@@ -22,7 +23,7 @@ configure_file(
 )
 
 add_library(
-    gammaray_lz4 STATIC
+    gammaray_lz4 OBJECT
     ${CMAKE_SOURCE_DIR}/3rdparty/lz4/lz4.c
 )
 set_target_properties(gammaray_lz4 PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -30,29 +31,51 @@ set_target_properties(gammaray_lz4 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # Shared non-UI code between probe and client
 #
 set(gammaray_common_srcs
-    methodargument.cpp
-    objectbroker.cpp
-    protocol.cpp
-    message.cpp
-    endpoint.cpp
-    paths.cpp
-    propertysyncer.cpp
-    modelevent.cpp
-    modelutils.cpp
-    objectidfilterproxymodel.cpp
-    paintanalyzerinterface.cpp
-    selflocator.cpp
-    sourcelocation.cpp
-    translator.cpp
-    enumdefinition.cpp
-    enumrepository.cpp
-    enumvalue.cpp
     classesiconsrepository.cpp
-    remoteviewinterface.cpp
-    remoteviewframe.cpp
-    transferimage.cpp
+    classesiconsrepository.h
     commonutils.cpp
-    recursiveproxymodelbase.cpp
+    commonutils.h
+    endpoint.cpp
+    endpoint.h
+    enumdefinition.cpp
+    enumdefinition.h
+    enumrepository.cpp
+    enumrepository.h
+    enumvalue.cpp
+    enumvalue.h
+    message.cpp
+    message.h
+    methodargument.cpp
+    methodargument.h
+    modelevent.cpp
+    modelevent.h
+    modelutils.cpp
+    modelutils.h
+    objectbroker.cpp
+    objectbroker.h
+    objectid.h
+    objectidfilterproxymodel.cpp
+    objectidfilterproxymodel.h
+    paintanalyzerinterface.cpp
+    paintanalyzerinterface.h
+    paths.cpp
+    paths.h
+    propertysyncer.cpp
+    propertysyncer.h
+    protocol.cpp
+    protocol.h
+    remoteviewframe.cpp
+    remoteviewframe.h
+    remoteviewinterface.cpp
+    remoteviewinterface.h
+    selflocator.cpp
+    selflocator.h
+    sourcelocation.cpp
+    sourcelocation.h
+    transferimage.cpp
+    transferimage.h
+    translator.cpp
+    translator.h
 )
 
 add_library(
@@ -73,19 +96,12 @@ target_include_directories(
 )
 target_link_libraries(
     gammaray_common
-    LINK_PUBLIC
-    Qt::Core
-    LINK_PRIVATE
-    Qt::Network
-    Qt::Gui
-    Qt::GuiPrivate
+    PUBLIC Qt::Core
+    PRIVATE Qt::Network Qt::Gui Qt::GuiPrivate
 )
 target_link_libraries(
     gammaray_common
-    LINK_PRIVATE
-    gammaray_lz4
-    gammaray_kitemmodels
-    ${CMAKE_DL_LIBS}
+    PRIVATE $<BUILD_INTERFACE:gammaray_lz4> gammaray_kitemmodels ${CMAKE_DL_LIBS}
 )
 gammaray_set_rpath(gammaray_common ${LIB_INSTALL_DIR})
 if(GAMMARAY_USE_PCH)
@@ -93,26 +109,42 @@ if(GAMMARAY_USE_PCH)
 endif()
 
 set(gammaray_common_internal_srcs
-    plugininfo.cpp
-    pluginmanager.cpp
-    proxyfactorybase.cpp
-    propertycontrollerinterface.cpp
-    probecontrollerinterface.cpp
-    toolmanagerinterface.cpp
-    networkselectionmodel.cpp
-    streamoperators.cpp
     favoriteobjectinterface.cpp
-    tools/objectinspector/propertiesextensioninterface.cpp
-    tools/objectinspector/methodsextensioninterface.cpp
-    tools/objectinspector/connectionsextensioninterface.cpp
+    favoriteobjectinterface.h
+    networkselectionmodel.cpp
+    networkselectionmodel.h
+    plugininfo.cpp
+    plugininfo.h
+    pluginmanager.cpp
+    pluginmanager.h
+    probecontrollerinterface.cpp
+    probecontrollerinterface.h
+    propertycontrollerinterface.cpp
+    propertycontrollerinterface.h
+    proxyfactorybase.cpp
+    proxyfactorybase.h
+    streamoperators.cpp
+    streamoperators.h
+    toolmanagerinterface.cpp
+    toolmanagerinterface.h
     tools/messagehandler/messagehandlerinterface.cpp
+    tools/messagehandler/messagehandlerinterface.h
     tools/metatypebrowser/metatypebrowserinterface.cpp
+    tools/metatypebrowser/metatypebrowserinterface.h
+    tools/objectinspector/connectionsextensioninterface.cpp
+    tools/objectinspector/connectionsextensioninterface.h
+    tools/objectinspector/methodsextensioninterface.cpp
+    tools/objectinspector/methodsextensioninterface.h
+    tools/objectinspector/propertiesextensioninterface.cpp
+    tools/objectinspector/propertiesextensioninterface.h
     tools/problemreporter/problemreporterinterface.cpp
+    tools/problemreporter/problemreporterinterface.h
     tools/resourcebrowser/resourcebrowserinterface.cpp
+    tools/resourcebrowser/resourcebrowserinterface.h
 )
 
 add_library(
-    gammaray_common_internal STATIC
+    gammaray_common_internal OBJECT
     ${gammaray_common_internal_srcs}
 )
 set_target_properties(gammaray_common_internal PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -152,7 +184,6 @@ if(NOT GAMMARAY_PROBE_ONLY_BUILD)
         translator.h
         commonutils.h
         favoriteobjectinterface.h
-        recursiveproxymodelbase.h
     )
 
     ecm_generate_pri_file(

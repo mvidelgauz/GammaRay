@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -24,16 +24,10 @@
 #include <Qt3DExtras/QCuboidMesh>
 #include <Qt3DExtras/QForwardRenderer>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QBuffer>
 #include <Qt3DCore/QGeometry>
 namespace Qt3DGeometry = Qt3DCore;
-#else
-#include <Qt3DRender/QAttribute>
-#include <Qt3DRender/QBuffer>
-namespace Qt3DGeometry = Qt3DRender;
-#endif
 
 #include <Qt3DRender/QBlendEquation>
 #include <Qt3DRender/QBlendEquationArguments>
@@ -207,11 +201,9 @@ bool Qt3DGeometryTab::eventFilter(QObject *receiver, QEvent *event)
 
     auto renderSettings = new Qt3DRender::QRenderSettings;
     renderSettings->setActiveFrameGraph(forwardRenderer);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     renderSettings->pickingSettings()->setFaceOrientationPickingMode(Qt3DRender::QPickingSettings::FrontFace);
     renderSettings->pickingSettings()->setPickMethod(Qt3DRender::QPickingSettings::TrianglePicking);
     renderSettings->pickingSettings()->setPickResultMode(Qt3DRender::QPickingSettings::NearestPick);
-#endif
     rootEntity->addComponent(renderSettings);
 
     auto skyboxEntity = new Qt3DCore::QEntity(rootEntity);
@@ -451,14 +443,9 @@ static void setupAttribute(Qt3DGeometry::QAttribute *attr, const Qt3DGeometryAtt
     attr->setByteStride(attrData.byteStride);
     attr->setCount(attrData.count);
     attr->setDivisor(attrData.divisor);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     attr->setAttributeType(attrData.attributeType);
     attr->setVertexBaseType(attrData.vertexBaseType);
     attr->setVertexSize(attrData.vertexSize);
-#else
-    attr->setDataType(attrData.vertexBaseType);
-    attr->setDataSize(attrData.vertexSize);
-#endif
 }
 
 void Qt3DGeometryTab::updateGeometry()
@@ -481,11 +468,7 @@ void Qt3DGeometryTab::updateGeometry()
     QVector<Qt3DGeometry::QBuffer *> buffers;
     buffers.reserve(geo.buffers.size());
     for (const auto &bufferData : geo.buffers) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
         auto buffer = new Qt3DGeometry::QBuffer(geometry);
-#else
-        auto buffer = new Qt3DGeometry::QBuffer(bufferData.type, geometry);
-#endif
         buffer->setData(bufferData.data);
         buffers.push_back(buffer);
         ui->bufferBox->addItem(bufferData.name, QVariant::fromValue(buffer));
@@ -627,7 +610,6 @@ bool Qt3DGeometryTab::isIndexBuffer(unsigned int bufferIndex) const
 
 void Qt3DGeometryTab::trianglePicked(Qt3DRender::QPickEvent *pick)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     if (pick->button() != Qt3DRender::QPickEvent::LeftButton)
         return;
     const auto trianglePick = qobject_cast<Qt3DRender::QPickTriangleEvent *>(pick);
@@ -648,9 +630,6 @@ void Qt3DGeometryTab::trianglePicked(Qt3DRender::QPickEvent *pick)
 
     foreach (const auto &row, selModel->selectedRows())
         ui->bufferView->scrollTo(row, QAbstractItemView::EnsureVisible);
-#else
-    Q_UNUSED(pick);
-#endif
 }
 
 QSurfaceFormat Qt3DGeometryTab::probeFormat() const

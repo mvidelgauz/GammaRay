@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -17,20 +17,17 @@
 #include <QImage>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#if !defined(QT_NO_OPENGL) && !QT_CONFIG(opengles2)
 #include <QOpenGLFunctions_2_0>
+#endif
 #include <QPainter>
 #include <QQuickWindow>
 #include <QSGTexture>
 #include <QThread>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QQuickOpenGLUtils>
 #include <QOpenGLVersionFunctionsFactory>
-#endif
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
 #include <QOpenGLExtraFunctions>
-#endif
 
 #ifndef GL_TEXTURE_WIDTH
 #define GL_TEXTURE_WIDTH 0x1000
@@ -90,13 +87,9 @@ void QSGTextureGrabber::windowAfterRendering(QQuickWindow *window)
         return;
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     if (window->rendererInterface()->graphicsApi() != QSGRendererInterface::OpenGL) {
         return;
     }
-#else
-    Q_UNUSED(window);
-#endif
 
     auto context = QOpenGLContext::currentContext();
     // This check is only correct with the threaded render loop, for the basic one this
@@ -104,7 +97,6 @@ void QSGTextureGrabber::windowAfterRendering(QQuickWindow *window)
     // We can't detect this, so we rely on our safety checks in grabTexture and accept
     // a minimal chance of showing texture content from the wrong context.
     if (m_pendingTexture && QThread::currentThread() == m_pendingTexture->thread()) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         auto textureId = m_pendingTexture->nativeInterface<QNativeInterface::QSGOpenGLTexture>();
         if (textureId) {
             const auto img = grabTexture(context, textureId->nativeTexture());
@@ -112,14 +104,6 @@ void QSGTextureGrabber::windowAfterRendering(QQuickWindow *window)
                 emit textureGrabbed(m_pendingTexture, img);
             }
         }
-#else
-        if (m_pendingTexture->textureId() > 0) {
-            const auto img = grabTexture(context, m_pendingTexture->textureId());
-            if (!img.isNull()) {
-                emit textureGrabbed(m_pendingTexture, img);
-            }
-        }
-#endif
         resetRequest();
     }
 
@@ -128,16 +112,12 @@ void QSGTextureGrabber::windowAfterRendering(QQuickWindow *window)
     if (m_textureId > 0) {
         const auto img = grabTexture(context, m_textureId);
         if (!img.isNull()) {
-            emit textureGrabbed(m_grabData, img);
+            emit textureGrabbedUntyped(m_grabData, img);
         }
         resetRequest();
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QQuickOpenGLUtils::resetOpenGLState();
-#else
-    window->resetOpenGLState();
-#endif
 }
 
 QImage QSGTextureGrabber::grabTexture(QOpenGLContext *context, int textureId) const
@@ -155,7 +135,6 @@ QImage QSGTextureGrabber::grabTexture(QOpenGLContext *context, int textureId) co
             return QImage();
         }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
         // check if the size matches our expectations (requires ES3.1, so we might have to skip this
         auto glExtraFuncs = context->extraFunctions();
         if (glExtraFuncs) {
@@ -170,7 +149,6 @@ QImage QSGTextureGrabber::grabTexture(QOpenGLContext *context, int textureId) co
         } else {
             qDebug() << "Can't validate texture size (OpenGL ES < 3.1), things might go wrong in a multi-context scenario...";
         }
-#endif
 
         // bind texture to an FBO, and read that, direct texture reading is not supported with OpenGL ES
         int prev_fbo = -1;
@@ -186,11 +164,7 @@ QImage QSGTextureGrabber::grabTexture(QOpenGLContext *context, int textureId) co
         return img;
     } else {
 #if !defined(QT_NO_OPENGL) && !QT_CONFIG(opengles2)
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         auto glFuncs = QOpenGLVersionFunctionsFactory::get<QOpenGLFunctions_2_0>(context);
-#else
-        auto glFuncs = context->versionFunctions<QOpenGLFunctions_2_0>();
-#endif
         if (!glFuncs) {
             qWarning() << "unable to obtain OpenGL2 functions, too old GL version?";
             return QImage();

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Giulio Camuffo <giulio.camuffo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -62,13 +62,8 @@ public:
     void drawLinePartialSelected(QPainter &painter, const QRect &rect, const QStaticText &line, int startSelectChar, int endSelectChar)
     {
         const QString &text = line.text();
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-        const int startX = m_metrics.width(text.left(startSelectChar));
-        const int endX = m_metrics.width(text.left(endSelectChar));
-#else
         const int startX = m_metrics.horizontalAdvance(text.left(startSelectChar));
         const int endX = m_metrics.horizontalAdvance(text.left(endSelectChar));
-#endif
 
         if (startSelectChar > 0) {
             painter.drawText(QRect(rect.x(), rect.y(), startX, rect.height()), Qt::TextDontClip, text.left(startSelectChar));
@@ -79,13 +74,9 @@ public:
         painter.setPen(palette().color(QPalette::HighlightedText));
         painter.drawText(selectRect, Qt::TextDontClip, text.mid(startSelectChar, endSelectChar - startSelectChar));
 
-        if (endSelectChar < text.count()) {
+        if (endSelectChar < text.size()) {
             painter.setPen(palette().color(QPalette::Text));
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-            painter.drawText(QRect(rect.x() + endX, rect.y(), m_metrics.width(text) - endX, rect.height()), text.mid(endSelectChar));
-#else
             painter.drawText(QRect(rect.x() + endX, rect.y(), m_metrics.horizontalAdvance(text) - endX, rect.height()), text.mid(endSelectChar));
-#endif
         }
     }
 
@@ -120,12 +111,12 @@ public:
         selectionBoundaries(start, end);
 
         if (start.y() < line && line < end.y()) {
-            return { 0, ( int )m_lines.at(line).text.text().count() };
+            return { 0, ( int )m_lines.at(line).text.text().size() };
         }
 
         if (start.y() == line || end.y() == line) {
             int startChar = 0;
-            int endChar = m_lines.at(line).text.text().count();
+            int endChar = m_lines.at(line).text.text().size();
             if (start.y() == line)
                 startChar = start.x();
             if (end.y() == line)
@@ -148,7 +139,7 @@ public:
         int startingLine = lineAt(drawRect.y());
         int y = linePosAt(drawRect.y());
 
-        for (int i = startingLine; i < m_lines.count(); ++i) {
+        for (int i = startingLine; i < m_lines.size(); ++i) {
             if (m_client && m_lines.at(i).pid != m_client) {
                 continue;
             }
@@ -174,23 +165,23 @@ public:
 
     inline int linesCount() const
     {
-        return m_client ? m_linesCount.value(m_client) : m_lines.count();
+        return m_client ? m_linesCount.value(m_client) : m_lines.size();
     }
 
     inline int linePosAt(int y) const
     {
-        int line = qMin(y / m_lineHeight, m_lines.count() - 1);
+        int line = qMin(y / m_lineHeight, m_lines.size() - 1);
         return line * m_lineHeight;
     }
 
     inline int lineAt(int y) const
     {
-        int line = qMin(y / m_lineHeight, m_lines.count() - 1);
+        int line = qMin(y / m_lineHeight, m_lines.size() - 1);
         if (!m_client) {
             return line;
         }
 
-        for (int i = 0, l = 0; i < m_lines.count(); ++i) {
+        for (int i = 0, l = 0; i < m_lines.size(); ++i) {
             if (m_lines.at(i).pid == m_client) {
                 if (l++ == line) {
                     return i;
@@ -205,16 +196,12 @@ public:
         int lineX = 0;
 
         const QString &text = m_lines.at(line).text.text();
-        for (int x = 0, i = 0; i < text.count(); ++i) {
+        for (int x = 0, i = 0; i < text.size(); ++i) {
             const QChar &c = text.at(i);
             if (p.x() >= x) {
                 lineX = i;
             }
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-            x += m_metrics.width(c);
-#else
             x += m_metrics.horizontalAdvance(c);
-#endif
         }
 
         return { lineX, line };
@@ -251,11 +238,7 @@ public:
             }
             const QStaticText &line = m_lines.at(i).text;
             LineSelection selection = lineSelection(i);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            string += line.text().midRef(selection.start, selection.end - selection.start);
-#else
             string += line.text().mid(selection.start, selection.end - selection.start);
-#endif
             string += QLatin1Char('\n');
         }
         return string;
@@ -458,6 +441,7 @@ public:
             int startLine = drawRect.left() / linesSpacing - (rit - it) / m_zoom; // round the starting position so that we have nice numbers'
 
             int s = startLine;
+            // NOLINTNEXTLINE (clang-analyzer-security.FloatLoopCounter)
             for (qreal i = startLine * linesSpacing; i < drawRect.right(); i += linesSpacing, s++) {
                 bool isStep = s % substeps == 0;
                 painter.setPen(isStep ? palette.color(QPalette::Highlight) : palette.color(QPalette::Midlight));
@@ -474,6 +458,7 @@ public:
             // draw the text after having drawn all the lines, so we're sure they don't go over it
             s = startLine;
             painter.setPen(palette.color(QPalette::Highlight));
+            // NOLINTNEXTLINE (clang-analyzer-security.FloatLoopCounter)
             for (qreal i = startLine * linesSpacing; i < drawRect.right(); i += step / substeps, s++) { // krazy:exclude=postfixop
                 bool isStep = s % substeps == 0;
                 if (isStep) {
@@ -484,7 +469,7 @@ public:
             // finally draw the event lines
             painter.setPen(palette.color(QPalette::Text));
             bool hasDrawn = false;
-            for (int i = 0; i < m_data.count(); ++i) {
+            for (int i = 0; i < m_data.size(); ++i) {
                 const auto &point = m_data.at(i);
                 if (m_client && point.pid != m_client) {
                     painter.setPen(palette.color(QPalette::Dark));
@@ -509,8 +494,8 @@ public:
 
         void mouseMoveEvent(QMouseEvent *e) override
         {
-            const QPointF &pos = e->localPos();
-            for (int i = 0; i < m_data.count(); ++i) {
+            const QPointF &pos = e->position();
+            for (int i = 0; i < m_data.size(); ++i) {
                 qreal timex = (m_data.at(i).time - m_start) / m_zoom;
                 if (fabs(pos.x() - timex) < 2) {
                     setToolTip(m_data.at(i).msg);
@@ -527,7 +512,7 @@ public:
 
         void updateSize()
         {
-            if (m_data.count() == 0)
+            if (m_data.size() == 0)
                 return;
 
             m_start = round(m_data.at(0).time, -1);
@@ -568,11 +553,7 @@ public:
         if (o == &m_view && e->type() == QEvent::Wheel) {
             QWheelEvent *we = static_cast<QWheelEvent *>(e);
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
             qreal pos = we->position().x() * m_view.m_zoom;
-#else
-            qreal pos = we->posF().x() * m_view.m_zoom;
-#endif
             auto sb = horizontalScrollBar();
             int sbvalue = horizontalScrollBar()->value();
 
@@ -585,11 +566,7 @@ public:
 
             // keep the point under the mouse still, if possible
             pos = pos / m_view.m_zoom;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
             sb->setValue(sbvalue + (0.5 + pos - we->position().x()));
-#else
-            sb->setValue(sbvalue + (0.5 + pos - we->posF().x()));
-#endif
         }
         return QScrollArea::eventFilter(o, e);
     }

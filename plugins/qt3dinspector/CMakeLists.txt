@@ -1,6 +1,6 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -33,6 +33,7 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
         gammaray_kitemmodels
         Qt::3DInput
         Qt::3DRender
+        Qt::CorePrivate
     )
     if(TARGET Qt::3DAnimation)
         target_link_libraries(gammaray_3dinspector Qt::3DAnimation)

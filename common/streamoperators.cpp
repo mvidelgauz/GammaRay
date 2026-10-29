@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -43,16 +43,8 @@ void StreamOperators::registerOperators()
     StreamOperators::registerOperators<QHash<int, QByteArray>>();
 
     StreamOperators::registerOperators<ObjectId>();
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    // This is needed so QVariant based comparison works (ie: QAIM::match)
-    QMetaType::registerComparators<ObjectId>();
-#endif
 
     StreamOperators::registerOperators<ObjectIds>();
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    // This is needed so QVariant based comparison works (ie: QAIM::match)
-    QMetaType::registerComparators<ObjectIds>();
-#endif
 
     StreamOperators::registerOperators<GammaRay::VariantWrapper>();
     StreamOperators::registerOperators<GammaRay::SourceLocation>();

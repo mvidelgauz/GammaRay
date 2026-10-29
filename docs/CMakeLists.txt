@@ -1,6 +1,6 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
@@ -8,12 +8,9 @@
 #
 
 # qdoc toolchain
-find_package(Qt${Qt_VERSION_MAJOR} NO_MODULE QUIET OPTIONAL_COMPONENTS Help)
-if(Qt_VERSION_MAJOR EQUAL 5)
-    find_package(Qt${Qt_VERSION_MAJOR} NO_MODULE QUIET OPTIONAL_COMPONENTS AttributionsScannerTools)
-elseif(Qt_VERSION_MAJOR GREATER_EQUAL 6)
-    find_package(Qt${Qt_VERSION_MAJOR} NO_MODULE QUIET OPTIONAL_COMPONENTS ToolsTools)
-endif()
+find_package(Qt${QT_VERSION_MAJOR} NO_MODULE QUIET OPTIONAL_COMPONENTS Help)
+
+find_package(Qt${QT_VERSION_MAJOR} NO_MODULE QUIET OPTIONAL_COMPONENTS ToolsTools)
 
 if(TARGET Qt::qdoc)
     set(QDOC_EXECUTABLE "$<TARGET_FILE:Qt::qdoc>")
@@ -25,13 +22,13 @@ if(TARGET Qt::qhelpgenerator)
     # Required for Doxygen
     get_target_property(QHELPGEN_EXECUTABLE Qt::qhelpgenerator IMPORTED_LOCATION)
 else()
-    find_program(QHELPGEN_EXECUTABLE qhelpgenerator HINTS ${QT_INSTALL_BINS})
+    find_program(QHELPGEN_EXECUTABLE qhelpgenerator HINTS ${QT_INSTALL_BINS} ${QT_INSTALL_LIBEXECS})
 endif()
 
 if(TARGET Qt::qtattributionsscanner)
     set(QTATTRIBUTIONSSCANNER_EXECUTABLE Qt::qtattributionsscanner)
 else()
-    find_program(QTATTRIBUTIONSSCANNER_EXECUTABLE qtattributionsscanner HINTS ${QT_INSTALL_BINS})
+    find_program(QTATTRIBUTIONSSCANNER_EXECUTABLE qtattributionsscanner HINTS ${QT_INSTALL_BINS} ${QT_INSTALL_LIBEXECS})
 endif()
 
 if(NOT DEFINED QDOC_TEMPLATE_DIR)
@@ -46,7 +43,7 @@ if(NOT DEFINED QDOC_TEMPLATE_DIR)
 endif()
 
 if(NOT DEFINED QDOC_INDEX_DIR)
-    # compute the qdoc index dir from where qtcore.index is found
+    # try to compute the qdoc index dir from where qtcore.index is found
     find_file(QDOC_INDEX qtcore.index HINTS ${QT_INSTALL_DOCS}/qtcore ${QT_INSTALL_DATA}/doc/qtcore)
     if(QDOC_INDEX)
         get_filename_component(QDOC_INDEX_DIR ${QDOC_INDEX} DIRECTORY)
@@ -57,7 +54,6 @@ endif()
 if(NOT QDOC_EXECUTABLE
    OR NOT QHELPGEN_EXECUTABLE
    OR NOT QDOC_TEMPLATE_DIR
-   OR NOT QDOC_INDEX_DIR
    OR NOT QTATTRIBUTIONSSCANNER_EXECUTABLE
 )
     # Expand imported target data for status reporting
@@ -82,6 +78,9 @@ if(NOT QDOC_EXECUTABLE
     set(GAMMARAY_USER_MANUAL_BUILD False)
 else()
     set(GAMMARAY_USER_MANUAL_BUILD True)
+    if(NOT QDOC_INDEX_DIR)
+        message(STATUS "Couldn't find index dir, manual won't link to system documentation")
+    endif()
 endif()
 
 add_feature_info(

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -30,8 +30,8 @@ Q_DECLARE_METATYPE(KnownCustomType)
 class QMetaObjectValidatorTest : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(UnknownCustomType failUnknownType READ failUnknownType)
-    Q_PROPERTY(KnownCustomType knownType READ knownType)
+    Q_PROPERTY(UnknownCustomType failUnknownType READ failUnknownType CONSTANT)
+    Q_PROPERTY(KnownCustomType knownType READ knownType CONSTANT)
 public:
     static UnknownCustomType failUnknownType()
     {
@@ -43,7 +43,7 @@ public:
     }
 
 signals:
-    void destroyed();
+    void destroyed(); // clazy:exclude=overloaded-signal
 
 public slots:
     void unknownParameter(int, UnknownCustomType, int)
@@ -74,11 +74,7 @@ private slots:
         for (int i = staticMetaObject.methodOffset(); i < staticMetaObject.methodCount(); ++i) {
             const auto method = staticMetaObject.method(i);
             if (method.name().startsWith("unknown")) // krazy:exclude=strings
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
                 QVERIFY(QMetaObjectValidator::checkMethod(&staticMetaObject, method) == QMetaObjectValidatorResult::NoIssue);
-#else
-                QVERIFY(QMetaObjectValidator::checkMethod(&staticMetaObject, method) & QMetaObjectValidatorResult::UnknownMethodParameterType);
-#endif
             else
                 QVERIFY((QMetaObjectValidator::checkMethod(&staticMetaObject, method) & QMetaObjectValidatorResult::UnknownMethodParameterType) == 0);
         }
@@ -89,11 +85,7 @@ private slots:
         for (int i = staticMetaObject.propertyOffset(); i < staticMetaObject.propertyCount(); ++i) {
             const auto property = staticMetaObject.property(i);
             if (strstr(property.name(), "fail") == property.name())
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
                 QVERIFY(QMetaObjectValidator::checkProperty(&staticMetaObject, property) == QMetaObjectValidatorResult::NoIssue);
-#else
-                QVERIFY(QMetaObjectValidator::checkProperty(&staticMetaObject, property) & QMetaObjectValidatorResult::UnknownPropertyType);
-#endif
             else
                 QVERIFY((QMetaObjectValidator::checkProperty(&staticMetaObject, property) & QMetaObjectValidatorResult::UnknownPropertyType) == 0);
         }
@@ -101,13 +93,8 @@ private slots:
 
     static void testObject()
     {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         QCOMPARE(QMetaObjectValidator::check(&staticMetaObject),
                  QMetaObjectValidatorResult::SignalOverride);
-#else
-        QCOMPARE(QMetaObjectValidator::check(&staticMetaObject),
-                 QMetaObjectValidatorResult::SignalOverride | QMetaObjectValidatorResult::UnknownMethodParameterType | QMetaObjectValidatorResult::UnknownPropertyType);
-#endif
         QCOMPARE(QMetaObjectValidator::check(&QObject::staticMetaObject), QMetaObjectValidatorResult::NoIssue);
     }
 };

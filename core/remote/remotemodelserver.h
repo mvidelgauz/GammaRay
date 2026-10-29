@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -18,11 +18,7 @@
 
 #include <QObject>
 #include <QPointer>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QRegExp>
-#else
 #include <QRegularExpression>
-#endif
 
 QT_BEGIN_NAMESPACE
 class QBuffer;
@@ -39,17 +35,12 @@ class Message;
 class RemoteModelServer : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(bool dynamicSortFilter READ proxyDynamicSortFilter WRITE setProxyDynamicSortFilter)
-    Q_PROPERTY(
+    Q_PROPERTY(bool dynamicSortFilter READ proxyDynamicSortFilter WRITE setProxyDynamicSortFilter) // clazy:exclude=qproperty-without-notify
+    Q_PROPERTY( // clazy:exclude=qproperty-without-notify
         Qt::CaseSensitivity filterCaseSensitivity READ proxyFilterCaseSensitivity WRITE setProxyFilterCaseSensitivity)
-    Q_PROPERTY(int filterKeyColumn READ proxyFilterKeyColumn WRITE setProxyFilterKeyColumn)
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    Q_PROPERTY(QRegExp filterRegExp READ proxyFilterRegExp WRITE setProxyFilterRegExp)
-    using RegExpT = QRegExp;
-#else
-    Q_PROPERTY(QRegularExpression filterRegularExpression READ proxyFilterRegExp WRITE setProxyFilterRegExp)
+    Q_PROPERTY(int filterKeyColumn READ proxyFilterKeyColumn WRITE setProxyFilterKeyColumn) // clazy:exclude=qproperty-without-notify
+    Q_PROPERTY(QRegularExpression filterRegularExpression READ proxyFilterRegExp WRITE setProxyFilterRegExp) // clazy:exclude=qproperty-without-notify
     using RegExpT = QRegularExpression;
-#endif
 
 public:
     /** Registers a new model server object with name @p objectName (must be unique). */

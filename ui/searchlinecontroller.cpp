@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -14,11 +14,7 @@
 #include "searchlinecontroller.h"
 
 #include <QLineEdit>
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QRegularExpression>
-#else
-#include <QRegExp>
-#endif
 #include <QTimer>
 #include <QTreeView>
 #include <QAbstractProxyModel>
@@ -64,9 +60,7 @@ SearchLineController::SearchLineController(QLineEdit *lineEdit, QAbstractItemMod
     m_filterModel->setProperty("filterCaseSensitivity", Qt::CaseInsensitive);
     activateSearch();
 
-#if QT_VERSION >= 0x050200
     m_lineEdit->setClearButtonEnabled(true);
-#endif
     if (m_lineEdit->placeholderText().isEmpty())
         m_lineEdit->setPlaceholderText(tr("Search"));
 
@@ -87,13 +81,8 @@ SearchLineController::~SearchLineController() = default;
 void SearchLineController::activateSearch()
 {
     if (m_filterModel) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         m_filterModel->setProperty("filterRegularExpression",
                                    QRegularExpression(m_lineEdit->text(), QRegularExpression::CaseInsensitiveOption));
-#else
-        m_filterModel->setProperty("filterRegExp",
-                                   QRegExp(m_lineEdit->text(), Qt::CaseInsensitive, QRegExp::FixedString));
-#endif
     }
 }
 

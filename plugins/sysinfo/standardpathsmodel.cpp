@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -38,9 +38,6 @@ static const standard_path_t standard_paths[] = {
     P(PicturesLocation),
     P(TempLocation),
     P(HomeLocation),
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    P(DataLocation),
-#endif
     P(CacheLocation),
     P(GenericDataLocation),
     P(RuntimeLocation),

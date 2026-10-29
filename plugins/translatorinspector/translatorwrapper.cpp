@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Jan Dalheimer <jan.dalheimer@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -119,7 +119,7 @@ void TranslationsModel::resetTranslations(const QItemSelection &selection)
         }
     }
 
-    for (int i = ranges.count() - 1; i >= 0; --i) {
+    for (int i = ranges.size() - 1; i >= 0; --i) {
         const auto &range = ranges[i];
         beginRemoveRows(QModelIndex(), range.first, range.second);
         m_nodes.remove(range.first, range.second - range.first + 1);

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -135,7 +135,7 @@ PaintBuffer PaintBufferModel::buffer() const
 void PaintBufferModel::setCosts(const QVector<double> &costs)
 {
     m_costs = costs;
-    if (rowCount() > 0) {
+    if (rowCount() > 0 && !m_costs.isEmpty()) {
         m_maxCost = *std::max_element(m_costs.constBegin(), m_costs.constEnd());
         emit dataChanged(index(0, 2, QModelIndex()), index(rowCount() - 1, 2, QModelIndex()));
     }
@@ -423,9 +423,11 @@ int PaintBufferModel::columnCount(const QModelIndex &parent) const
 
 int PaintBufferModel::rowCount(const QModelIndex &parent) const
 {
-    if (!m_privateBuffer)
+    if (!m_privateBuffer || parent.column() > 0)
         return 0;
     if (parent.isValid()) {
+        if (parent.internalId() != TopLevelId) // arguments have no children
+            return 0;
         const auto cmd = m_privateBuffer->commands.at(parent.row());
         return cmdTypes[cmd.id].argumentCount;
     }
@@ -434,6 +436,8 @@ int PaintBufferModel::rowCount(const QModelIndex &parent) const
 
 QModelIndex PaintBufferModel::index(int row, int column, const QModelIndex &parent) const
 {
+    if (!hasIndex(row, column, parent))
+        return {};
     if (!parent.isValid())
         return createIndex(row, column, TopLevelId);
     return createIndex(row, column, parent.row());
@@ -441,7 +445,7 @@ QModelIndex PaintBufferModel::index(int row, int column, const QModelIndex &pare
 
 QModelIndex PaintBufferModel::parent(const QModelIndex &child) const
 {
-    if (child.internalId() == TopLevelId)
+    if (!child.isValid() || child.internalId() == TopLevelId)
         return {};
     return createIndex(child.internalId(), 0, TopLevelId);
 }

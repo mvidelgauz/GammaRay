@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -55,17 +55,13 @@ public:
         QVector<QVariant> v;
         const QList<QByteArray> paramTypes = signal.parameterTypes();
         for (int i = 0; i < paramTypes.size(); ++i) {
-            int type = QMetaType::type(paramTypes[i]);
+            int type = QMetaType::fromName(paramTypes[i]).id();
             if (type == QMetaType::Void || type == QMetaType::UnknownType) {
                 qWarning() << Q_FUNC_INFO << "unknown metatype for signal argument type"
                            << paramTypes[i];
                 continue;
             }
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-            v.push_back(QVariant(type, args[i + 1]));
-#else
             v.push_back(QVariant(QMetaType(type), args[i + 1]));
-#endif
         }
 
         return v;

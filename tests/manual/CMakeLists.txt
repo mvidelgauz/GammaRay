@@ -1,11 +1,12 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
+
 if(TARGET Qt::Widgets)
     set(gammaray_messagemodeltest_srcs messagemodeltest.cpp)
 
@@ -45,24 +46,6 @@ if(TARGET Qt::Widgets)
     add_dependencies(translator_test translator_test_qm)
 endif()
 
-if(Qt5Webkit_FOUND)
-    add_executable(wk1application wk1application.cpp)
-    target_link_libraries(
-        wk1application
-        Qt::Core
-        Qt::Gui
-        Qt::Widgets
-        Qt5::Webkit
-        Qt5::WebkitWidgets
-    )
-endif()
-
-if(Qt5WebKit_FOUND AND TARGET Qt::Quick)
-    set(wk2application_srcs wk2application.cpp wk2application.qrc)
-    add_executable(wk2application ${wk2application_srcs})
-    target_link_libraries(wk2application Qt::Quick)
-endif()
-
 add_executable(
     signalmonitortest
     signalmonitortest.cpp
@@ -93,7 +76,6 @@ if(GAMMARAY_STATIC_PROBE)
         gammaray_probe
         Qt::Widgets
         gammaray_actioninspector_plugin
-        gammaray_codecbrowser_plugin
         gammaray_eventmonitor_plugin
         gammaray_guisupport
         gammaray_fontbrowser_plugin

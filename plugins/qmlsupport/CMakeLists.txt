@@ -1,11 +1,12 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
+
 # probe plugin
 if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
     set(gammaray_qmlsupport_srcs
@@ -34,7 +35,7 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
         Qt::QmlPrivate
     )
 
-    if(NOT QtQml_VERSION VERSION_LESS 5.10 OR TARGET Qt6::Qml)
+    if(TARGET Qt${QT_VERSION_MAJOR}::Qml)
         target_sources(gammaray_qmlsupport PUBLIC qmlbindingprovider.cpp)
     endif()
 

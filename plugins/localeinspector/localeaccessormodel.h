@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Stephen Kelly <stephen.kelly@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -26,12 +26,12 @@ struct LocaleDataAccessor;
 class LocaleAccessorModel : public QAbstractTableModel
 {
     Q_OBJECT
-    Q_ENUMS(CustomRoles)
 public:
     enum CustomRoles
     {
         AccessorRole = UserRole + 1
     };
+    Q_ENUM(CustomRoles)
 
     explicit LocaleAccessorModel(LocaleDataAccessorRegistry *registry, QObject *parent = nullptr);
 

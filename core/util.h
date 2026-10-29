@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -66,7 +66,7 @@ GAMMARAY_CORE_EXPORT QString shortDisplayString(const QObject *object);
 inline QString addressToString(const void *p)
 {
     char buf[20];
-    qsnprintf(buf, sizeof(buf), "0x%llx", reinterpret_cast<quint64>(p));
+    std::snprintf(buf, sizeof(buf), "0x%llx", reinterpret_cast<quint64>(p));
     return QString::fromLatin1(buf);
 }
 

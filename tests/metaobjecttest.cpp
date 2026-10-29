@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -31,6 +31,22 @@ private slots:
     void initTestCase()
     {
         EnumRepositoryServer::create(this);
+    }
+
+    // clearing the repository has to forget everything, it is set up again with new meta objects
+    static void testClear()
+    {
+        QThread thread;
+        // the old entries only cause trouble when new meta objects get their addresses
+        for (int i = 0; i < 100; ++i) {
+            MetaObjectRepository::instance()->clear();
+            auto repository = MetaObjectRepository::instance();
+            void *obj = static_cast<QObject *>(&thread);
+            auto mo = repository->metaObject(repository->metaObject(QStringLiteral("QObject")), obj);
+            QVERIFY(mo);
+            QCOMPARE(mo, repository->metaObject(QStringLiteral("QThread")));
+            QCOMPARE(obj, static_cast<void *>(&thread));
+        }
     }
 
     static void testMetaObject()
@@ -64,6 +80,9 @@ private slots:
         }
 
         QVERIFY(prop);
+        if (!prop)
+            return; // to silence clang-tidy
+
         QCOMPARE(prop->name(), "priority");
         QCOMPARE(prop->typeName(), "QThread::Priority");
 
@@ -87,6 +106,8 @@ private slots:
         }
 
         QVERIFY(prop);
+        if (!prop)
+            return; // to silence clang-tidy
         QCOMPARE(prop->name(), "libraryPaths");
         QCOMPARE(prop->typeName(), "QStringList");
         QCOMPARE(prop->isReadOnly(), true);

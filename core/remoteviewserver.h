@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -76,9 +76,8 @@ private:
                         int modifiers) override;
     void sendWheelEvent(const QPoint &localPos, QPoint pixelDelta, QPoint angleDelta, int buttons,
                         int modifiers) override;
-    void sendTouchEvent(int type, int touchDeviceType, int deviceCaps, int touchDeviceMaxTouchPoints, int modifiers,
-                        int touchPointStates, const QList<QTouchEvent::TouchPoint> &touchPoints)
-        override;
+    void sendTouchEvent(const QString &deviceName, int deviceSystemId, int type, int touchDeviceType, int deviceCaps, int touchDeviceMaxTouchPoints, int modifiers,
+                        const QList<QTouchEvent::TouchPoint> &touchPoints) override;
     void setViewActive(bool active) override;
     void sendUserViewport(const QRectF &userViewport) override;
     void clientViewUpdated() override;
@@ -101,11 +100,7 @@ private:
     bool m_grabberReady;
     bool m_pendingReset;
     bool m_pendingCompleteFrame;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     std::unique_ptr<QPointingDevice> m_touchDevice;
-#else
-    std::unique_ptr<QTouchDevice> m_touchDevice;
-#endif
 };
 }
 

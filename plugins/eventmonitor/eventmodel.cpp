@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Tim Henning <tim.henning@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -41,7 +41,7 @@ EventModel::EventModel(QObject *parent)
     m_pendingEventTimer->setInterval(200);
     connect(m_pendingEventTimer, &QTimer::timeout, this, [this]() {
         Q_ASSERT(!m_pendingEvents.isEmpty());
-        beginInsertRows(QModelIndex(), m_events.count(), m_events.count() + m_pendingEvents.size() - 1);
+        beginInsertRows(QModelIndex(), m_events.size(), m_events.size() + m_pendingEvents.size() - 1);
         m_events += m_pendingEvents;
         m_pendingEvents.clear();
         endInsertRows();

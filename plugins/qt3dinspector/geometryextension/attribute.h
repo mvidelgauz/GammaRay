@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -16,13 +16,8 @@
 
 #include <QtGlobal>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <Qt3DCore/QAttribute>
 namespace Qt3DGeometry = Qt3DCore;
-#else
-#include <Qt3DRender/QAttribute>
-namespace Qt3DGeometry = Qt3DRender;
-#endif
 
 namespace GammaRay {
 /** Utilities for decoding attribute data. */

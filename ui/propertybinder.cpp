@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,8 +12,6 @@
 */
 
 #include "propertybinder.h"
-
-#include <compat/qasconst.h>
 
 #include <QDebug>
 #include <QMetaProperty>
@@ -56,7 +54,8 @@ void PropertyBinder::add(const char *sourceProp, const char *destProp)
     b.sourceProperty = m_source->metaObject()->property(sourceIndex);
     Q_ASSERT(b.sourceProperty.isValid());
     Q_ASSERT(b.sourceProperty.hasNotifySignal());
-    connect(m_source, QByteArray("2") + b.sourceProperty.notifySignal().methodSignature(), this, SLOT(syncSourceToDestination()));
+    const QByteArray sig1 = QByteArray("2") + b.sourceProperty.notifySignal().methodSignature();
+    connect(m_source, sig1, this, SLOT(syncSourceToDestination()));
 
     const auto destIndex = m_destination->metaObject()->indexOfProperty(destProp);
     b.destinationProperty = m_destination->metaObject()->property(destIndex);
@@ -69,7 +68,8 @@ void PropertyBinder::add(const char *sourceProp, const char *destProp)
     if (!b.destinationProperty.hasNotifySignal() || !b.sourceProperty.isWritable())
         return;
 
-    connect(m_destination, QByteArray("2") + b.destinationProperty.notifySignal().methodSignature(), this, SLOT(syncDestinationToSource()));
+    const QByteArray sig2 = QByteArray("2") + b.destinationProperty.notifySignal().methodSignature();
+    connect(m_destination, sig2, this, SLOT(syncDestinationToSource()));
 }
 
 void PropertyBinder::syncSourceToDestination()
@@ -78,7 +78,7 @@ void PropertyBinder::syncSourceToDestination()
         return;
 
     m_lock = true;
-    for (const auto &b : qAsConst(m_properties))
+    for (const auto &b : std::as_const(m_properties))
         b.destinationProperty.write(m_destination, b.sourceProperty.read(m_source));
     m_lock = false;
 }
@@ -89,7 +89,7 @@ void PropertyBinder::syncDestinationToSource()
         return;
 
     m_lock = true;
-    for (const auto &b : qAsConst(m_properties)) {
+    for (const auto &b : std::as_const(m_properties)) {
         if (!b.sourceProperty.isWritable())
             continue;
         b.sourceProperty.write(m_source, b.destinationProperty.read(m_destination));

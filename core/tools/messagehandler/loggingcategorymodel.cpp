@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -13,6 +13,8 @@
 
 #include "loggingcategorymodel.h"
 #include <QFile>
+
+#include <algorithm>
 
 using namespace GammaRay;
 
@@ -52,7 +54,7 @@ QByteArray LoggingCategoryModel::exportLoggingConfig(bool all, bool forFile)
     }
 
     const char delimiter = forFile ? '\n' : ';';
-    for (const auto &cat : qAsConst(m_categories)) {
+    for (const auto &cat : std::as_const(m_categories)) {
         if (all || cat.category->isDebugEnabled() != cat.wasDebugEnabled) {
             ret.append(cat.category->categoryName());
             ret.append(cat.category->isDebugEnabled() ? ".debug=true" : ".debug=false");
@@ -133,8 +135,6 @@ QVariant LoggingCategoryModel::data(const QModelIndex &index, int role) const
 Qt::ItemFlags LoggingCategoryModel::flags(const QModelIndex &index) const
 {
     const auto baseFlags = QAbstractTableModel::flags(index);
-    if (index.column() == 2) // info not available in Qt < 5.5
-        return baseFlags;
     if (index.column() > 0)
         return baseFlags | Qt::ItemIsUserCheckable;
     return baseFlags;
@@ -175,5 +175,10 @@ QVariant LoggingCategoryModel::headerData(int section, Qt::Orientation orientati
 
 void LoggingCategoryModel::addCategorySlot(QLoggingCategory *category)
 {
-    addCategory(category);
+    // Qt calls the filter for all categories again whenever the logging rules change
+    const auto known = std::any_of(m_categories.cbegin(), m_categories.cend(), [category](const CategoryWithDefaultValues &c) {
+        return c.category == category;
+    });
+    if (!known)
+        addCategory(category);
 }

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -54,7 +54,6 @@ CameraController::CameraController(Qt3DCore::QNode *parent)
     m_midMouseButtonAction->addInput(midMouseButtonInput);
 
     // mouse wheel zoom/strafe
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     auto xWheelInput = new Qt3DInput::QAnalogAxisInput(this);
     xWheelInput->setAxis(Qt3DInput::QMouseDevice::WheelX);
     xWheelInput->setSourceDevice(mouseDevice);
@@ -63,7 +62,6 @@ CameraController::CameraController(Qt3DCore::QNode *parent)
     yWheelInput->setAxis(Qt3DInput::QMouseDevice::WheelY);
     yWheelInput->setSourceDevice(mouseDevice);
     m_axis[TZ]->addInput(yWheelInput);
-#endif
 
     // TODO: shift for slow motion, ctrl for fast motion
 

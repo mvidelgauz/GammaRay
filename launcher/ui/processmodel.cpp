@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Milian Wolff <milian.wolff@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -13,8 +13,6 @@
 
 #include "processmodel.h"
 #include "probeabimodel.h"
-
-#include <compat/qasconst.h>
 
 #include <launcher/core/probefinder.h>
 
@@ -67,9 +65,9 @@ void ProcessModel::mergeProcesses(const ProcDataList &processes)
     // iterator over m_data
     int i = 0;
 
-    for (const ProcData &newProc : qAsConst(sortedProcesses)) {
+    for (const ProcData &newProc : std::as_const(sortedProcesses)) {
         bool shouldInsert = true;
-        while (i < m_data.count()) {
+        while (i < m_data.size()) {
             const ProcData &oldProc = m_data.at(i);
             if (oldProc < newProc) {
                 // remove old proc, seems to be outdated
@@ -102,13 +100,20 @@ void ProcessModel::mergeProcesses(const ProcDataList &processes)
         }
     }
 
+    while (m_data.size() != sortedProcesses.size()) {
+        int i = m_data.size() - 1;
+        beginRemoveRows(QModelIndex(), i, i);
+        m_data.removeAt(i);
+        endRemoveRows();
+    }
+
     // make sure the new data is properly inserted
     Q_ASSERT(m_data == sortedProcesses);
 }
 
 void ProcessModel::clear()
 {
-    beginRemoveRows(QModelIndex(), 0, m_data.count());
+    beginRemoveRows(QModelIndex(), 0, m_data.size());
     m_data.clear();
     endRemoveRows();
 }
@@ -126,7 +131,7 @@ ProcData ProcessModel::dataForRow(int row) const
 QModelIndex ProcessModel::indexForPid(const QString &pid) const
 {
     for (int i = 0; i < m_data.size(); ++i) {
-        if (m_data.at(i).ppid == pid)
+        if (QString::number(m_data.at(i).ppid) == pid)
             return index(i, 0);
     }
     return {};
@@ -167,9 +172,9 @@ QVariant ProcessModel::data(const QModelIndex &index, int role) const
             return data.user;
     } else if (role == Qt::ToolTipRole) {
         const ProbeABI bestABI = ProbeFinder::findBestMatchingABI(data.abi, m_availableABIs);
-        return tr("Name: %1\nPID: %2\nOwner: %3\nQt ABI: %4\nProbe available: %5").arg(data.image.isEmpty() ? data.name : data.image, data.ppid, data.user, data.abi.displayString(), bestABI.isValid() ? tr("yes") : tr("no"));
+        return tr("Name: %1\nPID: %2\nOwner: %3\nQt ABI: %4\nProbe available: %5").arg(data.image.isEmpty() ? data.name : data.image, QString::number(data.ppid), data.user, data.abi.displayString(), bestABI.isValid() ? tr("yes") : tr("no\n%1").arg(ProbeFinder::mismatchReason(data.abi, m_availableABIs)));
     } else if (role == PIDRole) {
-        return data.ppid.toInt(); // why is this a QString in the first place!?
+        return data.ppid;
     } else if (role == NameRole) {
         return data.image.isEmpty() ? data.name : data.image;
     } else if (role == StateRole) {
@@ -190,7 +195,7 @@ int ProcessModel::columnCount(const QModelIndex &parent) const
 
 int ProcessModel::rowCount(const QModelIndex &parent) const
 {
-    return parent.isValid() ? 0 : m_data.count();
+    return parent.isValid() ? 0 : m_data.size();
 }
 
 ProcDataList ProcessModel::processes() const

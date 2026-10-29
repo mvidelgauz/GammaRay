@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -83,9 +83,6 @@ struct IdeSettings
 };
 
 static const IdeSettings ideSettings[] = {
-#if defined(Q_OS_WIN) || defined(Q_OS_OSX)
-    { "", "", "", "" } // Dummy content, because we can't have empty arrays.
-#else
     { "kdevelop", "%f:%l:%c", QT_TRANSLATE_NOOP("GammaRay::MainWindow", "KDevelop"), "kdevelop" },
     { "kate", "%f --line %l --column %c", QT_TRANSLATE_NOOP("GammaRay::MainWindow", "Kate"),
       "kate" },
@@ -95,18 +92,18 @@ static const IdeSettings ideSettings[] = {
       nullptr },
     { "gvim", "%f +%l", QT_TRANSLATE_NOOP("GammaRay::MainWindow", "gvim"),
       nullptr },
-    { "qtcreator", "-client %f:%l:%c", QT_TRANSLATE_NOOP("GammaRay::MainWindow", "Qt Creator"), nullptr }
-#endif
+    { "qtcreator", "-client %f:%l:%c", QT_TRANSLATE_NOOP("GammaRay::MainWindow", "Qt Creator"), nullptr },
+    { "code", "-g %f:%l:%c", QT_TRANSLATE_NOOP("GammaRay::MainWindow", "Visual Studio Code"), nullptr },
+    { "codium", "-g %f:%l:%c", QT_TRANSLATE_NOOP("GammaRay::MainWindow", "VSCodium"), nullptr },
 };
-#if defined(Q_OS_WIN) || defined(Q_OS_OSX) // Remove this #if branch when adding real data to ideSettings for Windows/OSX.
-static const int ideSettingsSize = 0;
-#else
 static const int ideSettingsSize = sizeof(ideSettings) / sizeof(IdeSettings);
-#endif
+
+static const int IDE_SETTING_CUSTOM = -2;
+static const int IDE_SETTING_DEFAULT = -1;
 
 QStyle *gammarayStyleOverride()
 {
-    const auto styleNameOverride = QString::fromLocal8Bit(qgetenv("GAMMARAY_STYLE"));
+    const auto styleNameOverride = qEnvironmentVariable("GAMMARAY_STYLE");
     if (styleNameOverride.isEmpty()) {
         return nullptr;
     }
@@ -238,7 +235,17 @@ MainWindow::MainWindow(QWidget *parent)
     group->setExclusive(true);
 
     settings.beginGroup(QStringLiteral("CodeNavigation"));
-    const auto currentIdx = settings.value(QStringLiteral("IDE"), -1).toInt();
+    const auto currentIdx = settings.value(QStringLiteral("IDE"), IDE_SETTING_DEFAULT).toInt();
+
+    auto *systemDefaultAction = new QAction(menu);
+    systemDefaultAction->setText(tr("System Default"));
+    systemDefaultAction->setCheckable(true);
+    systemDefaultAction->setChecked(currentIdx == IDE_SETTING_DEFAULT);
+    systemDefaultAction->setData(IDE_SETTING_DEFAULT);
+    group->addAction(systemDefaultAction);
+    menu->addAction(systemDefaultAction);
+
+    menu->addSeparator();
 
     for (int i = 0; i < ideSettingsSize; ++i) {
         auto action = new QAction(menu);
@@ -258,12 +265,12 @@ MainWindow::MainWindow(QWidget *parent)
     auto *action = new QAction(menu);
     action->setText(tr("Custom..."));
     action->setCheckable(true);
-    action->setChecked(currentIdx == -1);
-    action->setData(-1);
+    action->setChecked(currentIdx == IDE_SETTING_CUSTOM);
+    action->setData(IDE_SETTING_CUSTOM);
     group->addAction(action);
     menu->addAction(action);
 
-#if defined(Q_OS_WIN) || defined(Q_OS_OSX)
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
     // This is a workaround for the cases, where we can't safely do assumptions
     // about the install location of the IDE
     action = new QAction(menu);
@@ -510,17 +517,14 @@ void MainWindow::navigateToCode(const QUrl &url, int lineNumber, int columnNumbe
     } else {
         QSettings settings;
         settings.beginGroup(QStringLiteral("CodeNavigation"));
-        const auto ideIdx = settings.value(QStringLiteral("IDE"), -1).toInt();
+        const auto ideIdx = settings.value(QStringLiteral("IDE"), IDE_SETTING_DEFAULT).toInt();
 
         QString command;
-#if !defined(Q_OS_WIN) && !defined(Q_OS_OSX) // Remove this #if branch when adding real data to ideSettings for Windows/OSX.
         if (ideIdx >= 0 && ideIdx < ideSettingsSize) {
             command += ideSettings[ideIdx].app;
             command += ' ';
             command += ideSettings[ideIdx].args;
-        } else
-#endif
-            if (ideIdx == -1) {
+        } else if (ideIdx == IDE_SETTING_CUSTOM) {
             command = settings.value(QStringLiteral("CustomCommand")).toString();
         } else {
             QDesktopServices::openUrl(QUrl(url));
@@ -561,7 +565,7 @@ void GammaRay::MainWindow::setCodeNavigationIDE(QAction *action)
     QSettings settings;
     settings.beginGroup(QStringLiteral("CodeNavigation"));
 
-    if (action->data() == -1) {
+    if (action->data() == IDE_SETTING_CUSTOM) {
         const auto customCmd = QInputDialog::getText(
             this, tr("Custom Code Navigation"),
             tr(
@@ -569,7 +573,7 @@ void GammaRay::MainWindow::setCodeNavigationIDE(QAction *action)
             QLineEdit::Normal, settings.value(QStringLiteral("CustomCommand")).toString());
         if (!customCmd.isEmpty()) {
             settings.setValue(QStringLiteral("CustomCommand"), customCmd);
-            settings.setValue(QStringLiteral("IDE"), -1);
+            settings.setValue(QStringLiteral("IDE"), IDE_SETTING_CUSTOM);
         }
         return;
     }

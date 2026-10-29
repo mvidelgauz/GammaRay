@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -77,8 +77,11 @@ Server::Server(QObject *parent)
 
 Server::~Server() = default;
 
+// there is no device when remote access is disabled, or the address isn't supported
 bool Server::listen()
 {
+    if (!m_serverDevice)
+        return false;
     Q_ASSERT(!m_serverDevice->isListening());
     if (!m_serverDevice->listen()) {
         return false;
@@ -89,7 +92,7 @@ bool Server::listen()
 
 bool Server::isListening() const
 {
-    return m_serverDevice->isListening();
+    return m_serverDevice && m_serverDevice->isListening();
 }
 
 Server *Server::instance()
@@ -307,11 +310,12 @@ void Server::handlerDestroyed(Protocol::ObjectAddress objectAddress, const QStri
     }
 }
 
-void Server::objectDestroyed(Protocol::ObjectAddress /*objectAddress*/, const QString &objectName,
+void Server::objectDestroyed(Protocol::ObjectAddress objectAddress, const QString &objectName,
                              QObject *object)
 {
     Q_UNUSED(object);
     removeObjectNameAddressMapping(objectName);
+    m_monitorNotifiers.remove(objectAddress);
 
     if (isConnected()) {
         Message msg(endpointAddress(), Protocol::ObjectRemoved);

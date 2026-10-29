@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -282,7 +282,6 @@ void PaintBufferEngine::createStackTrace()
 void PaintBufferEngine::pushOrigin()
 {
     const auto size = m_buffer->data()->commands.size();
-    m_buffer->m_origins.reserve(size);
     while (m_buffer->m_origins.size() < size) {
         m_buffer->m_origins.push_back(m_buffer->m_currentOrigin);
     }

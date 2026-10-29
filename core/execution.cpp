@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -147,7 +147,7 @@ static Execution::ResolvedFrame toResolvedFrame(const backward::ResolvedTrace &r
 static QString maybeDemangleName(char *name)
 {
 #ifdef HAVE_CXA_DEMANGLE
-#if defined(Q_OS_OSX)
+#if defined(Q_OS_MACOS)
     const char MANGLED_START[] = " _Z";
     const char MANGLED_END[] = " ";
 #else
@@ -342,7 +342,7 @@ namespace Execution {
 
 bool stackTracingAvailable()
 {
-    static const bool disableStackTracing = qgetenv("GAMMARAY_DISABLE_STACKTRACE") == "1";
+    static const bool disableStackTracing = qEnvironmentVariableIntValue("GAMMARAY_DISABLE_STACKTRACE") == 1;
     if (disableStackTracing)
         return false;
     return stackTracingAvailableImpl();

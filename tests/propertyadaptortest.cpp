@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -15,6 +15,8 @@
 #include <core/propertyadaptorfactory.h>
 #include <core/objectinstance.h>
 #include <core/propertydata.h>
+#include <core/propertyfilter.h>
+#include <common/propertymodel.h>
 #include <core/metaobject.h>
 #include <core/metaobjectrepository.h>
 #include <core/enumrepositoryserver.h>
@@ -81,6 +83,33 @@ private slots:
         MO_ADD_METAOBJECT0(QPen);
         MO_ADD_PROPERTY(QPen, color, setColor);
         MO_ADD_PROPERTY(QPen, width, setWidth);
+    }
+
+    // filters match the properties that have all of the given flags
+    static void testPropertyFilter()
+    {
+        PropertyData writable;
+        writable.setClassName(QStringLiteral("QObject"));
+        writable.setName(QStringLiteral("objectName"));
+        writable.setAccessFlags(PropertyData::Readable | PropertyData::Writable);
+        writable.setPropertyFlags(PropertyModel::Stored | PropertyModel::Writable);
+        PropertyData readOnly;
+        readOnly.setClassName(QStringLiteral("QObject"));
+        readOnly.setName(QStringLiteral("parent"));
+        readOnly.setAccessFlags(PropertyData::Readable);
+        readOnly.setPropertyFlags(PropertyModel::Constant);
+
+        const auto byName = PropertyFilter::classAndPropertyName(QStringLiteral("QObject"), QStringLiteral("objectName"));
+        QVERIFY(byName.matches(writable));
+        QVERIFY(!byName.matches(readOnly));
+
+        const PropertyFilter byAccess(QString(), QString(), QString(), PropertyData::Writable);
+        QVERIFY(byAccess.matches(writable));
+        QVERIFY(!byAccess.matches(readOnly));
+
+        const PropertyFilter byFlags(QString(), QString(), QString(), {}, PropertyModel::Constant);
+        QVERIFY(byFlags.matches(readOnly));
+        QVERIFY(!byFlags.matches(writable));
     }
 
     void testQtGadget()

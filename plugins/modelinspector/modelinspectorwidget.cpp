@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -114,11 +114,7 @@ static const MetaEnum::Value<Qt::ItemFlag> item_flag_table[] = {
     { Qt::ItemIsDropEnabled, "DropEnabled" },
     { Qt::ItemIsUserCheckable, "UserCheckable" },
     { Qt::ItemIsEnabled, "Enabled" },
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     { Qt::ItemIsAutoTristate, "AutoTristate" },
-#else
-    { Qt::ItemIsTristate, "AutoTristate" },
-#endif
     { Qt::ItemNeverHasChildren, "ItemNeverHasChildren" },
     { Qt::ItemIsUserTristate, "UserTristate" }
 };
@@ -127,12 +123,13 @@ static const MetaEnum::Value<Qt::ItemFlag> item_flag_table[] = {
 void ModelInspectorWidget::cellDataChanged()
 {
     const auto cellData = m_interface->currentCellData();
-    ui->indexLabel->setText(cellData.row != -1
-                                ? tr("Row: %1 Column: %2").arg(cellData.row).arg(cellData.column)
-                                : tr("Invalid"));
-    ui->internalIdLabel->setText(cellData.internalId);
-    ui->internalPtrLabel->setText(cellData.internalPtr);
-    ui->flagsLabel->setText(MetaEnum::flagsToString(cellData.flags, item_flag_table));
+    ui->indexLineEdit->setText(cellData.row != -1
+                                   ? tr("Row: %1 Column: %2").arg(cellData.row).arg(cellData.column)
+                                   : tr("Invalid"));
+    ui->internalIdLineEdit->setText(cellData.internalId);
+    ui->internalPtrLineEdit->setText(cellData.internalPtr);
+    ui->flagsPlainTextEdit->selectAll();
+    ui->flagsPlainTextEdit->insertPlainText(MetaEnum::flagsToString(cellData.flags, item_flag_table));
 }
 
 void ModelInspectorWidget::objectRegistered(const QString &objectName)

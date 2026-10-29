@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -52,10 +52,8 @@ int NetworkConfigurationModel::rowCount(const QModelIndex &parent) const
 Qt::ItemFlags NetworkConfigurationModel::flags(const QModelIndex &index) const
 {
     const auto baseFlags = QAbstractTableModel::flags(index);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
     if (index.column() == 3)
         return baseFlags | Qt::ItemIsEditable;
-#endif
     return baseFlags;
 }
 
@@ -74,11 +72,7 @@ QVariant NetworkConfigurationModel::data(const QModelIndex &index, int role) con
         case 2:
             return conf.bearerTypeName();
         case 3:
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
             return conf.connectTimeout();
-#else
-            return QStringLiteral("?");
-#endif
         case 4:
             return conf.isRoamingAvailable();
         case 5:
@@ -89,9 +83,7 @@ QVariant NetworkConfigurationModel::data(const QModelIndex &index, int role) con
             return VariantHandler::displayString(QVariant::fromValue(conf.type()));
         }
     } else if (role == Qt::EditRole && index.column() == 3) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
         return conf.connectTimeout();
-#endif
     } else if (role == NetworkConfigurationModelRoles::DefaultConfigRole && index.column() == 0) {
         if (conf == m_mgr->defaultConfiguration())
             return true;
@@ -105,10 +97,8 @@ bool NetworkConfigurationModel::setData(const QModelIndex &index, const QVariant
     if (!m_mgr || !index.isValid() || role != Qt::EditRole || index.column() != 3 || value.isNull())
         return false;
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
     auto conf = m_configs[index.row()];
     conf.setConnectTimeout(value.toInt());
-#endif
     emit dataChanged(index, index);
     return true;
 }

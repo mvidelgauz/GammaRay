@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -60,7 +60,8 @@ void setRootPath(const QString &rootPath)
 void setRelativeRootPath(const char *relativeRootPath)
 {
     Q_ASSERT(relativeRootPath);
-    setRootPath(QCoreApplication::applicationDirPath() + QDir::separator()
+    setRootPath(QFileInfo(QCoreApplication::applicationFilePath()).canonicalPath()
+                + QDir::separator()
                 + QLatin1String(relativeRootPath));
 }
 
@@ -114,13 +115,13 @@ QStringList pluginPaths(const QString &probeABI)
         addPluginPath(l, path + QLatin1String("/gammaray/" GAMMARAY_PLUGIN_VERSION "/") + probeABI);
         addPluginPath(l, path + QLatin1String("/gammaray"));
 
-#if defined(Q_OS_ANDROID) && QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+#if defined(Q_OS_ANDROID)
         addPluginPath(l, path);
 #endif
     }
 
     // based on Qt's own install layout and/or qt.conf
-    const auto path = QLibraryInfo::location(QLibraryInfo::PluginsPath);
+    const auto path = QLibraryInfo::path(QLibraryInfo::PluginsPath);
     addPluginPath(l, path + QLatin1String("/gammaray/" GAMMARAY_PLUGIN_VERSION "/") + probeABI);
     addPluginPath(l, path + QLatin1String("/gammaray"));
 
@@ -143,7 +144,7 @@ QStringList targetPluginPaths(const QString &probeABI)
     }
 
     // based on Qt's own install layout and/or qt.conf
-    const auto path = QLibraryInfo::location(QLibraryInfo::PluginsPath);
+    const auto path = QLibraryInfo::path(QLibraryInfo::PluginsPath);
     addPluginPath(l, path + QLatin1String("/gammaray/" GAMMARAY_PLUGIN_VERSION "/") + probeABI + QLatin1String("/target"));
     addPluginPath(l, path + QLatin1String("/gammaray-target"));
 
@@ -165,7 +166,7 @@ QString libraryExtension()
     return QStringLiteral(".dll");
 #elif defined(Q_OS_MAC)
     return QStringLiteral(".dylib");
-#elif defined(Q_OS_ANDROID) && QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+#elif defined(Q_OS_ANDROID)
     return QLatin1Char('_') + QLatin1String(ANDROID_ABI) + QLatin1String(".so");
 #else
     return QStringLiteral(".so");

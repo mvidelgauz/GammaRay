@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -82,11 +82,7 @@ int CodeEditor::sidebarWidth() const
         ++digits;
         count /= 10;
     }
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-    return 4 + fontMetrics().width(QLatin1Char('9')) * digits + foldingBarWidth();
-#else
     return 4 + fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits + foldingBarWidth();
-#endif
 }
 
 int CodeEditor::foldingBarWidth() const

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Anton Kreuzkamp <anton.kreuzkamp@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -104,7 +104,7 @@ void PropertiesTab::updateNewPropertyValueEditor()
     const PropertyEditorFactory::TypeId type = selectedTypeId(m_ui->newPropertyType);
 
     m_newPropertyValue = PropertyEditorFactory::instance()->createEditor(type, this);
-    static_cast<QHBoxLayout *>(m_ui->newPropertyBar->layout())->insertWidget(5, m_newPropertyValue);
+    static_cast<QHBoxLayout *>(m_ui->newPropertyBar->layout())->insertWidget(3, m_newPropertyValue);
     m_ui->newPropertyValueLabel->setBuddy(m_newPropertyValue);
 }
 

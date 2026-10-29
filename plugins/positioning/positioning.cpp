@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -25,9 +25,6 @@
 #include <QGeoSatelliteInfoSource>
 #include <QGeoAreaMonitorSource>
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-Q_DECLARE_METATYPE(QGeoPositionInfo)
-#endif
 Q_DECLARE_METATYPE(QGeoPositionInfoSource::Error)
 Q_DECLARE_METATYPE(QGeoPositionInfoSource::PositioningMethods)
 Q_DECLARE_METATYPE(QGeoSatelliteInfoSource::Error)
@@ -78,7 +75,9 @@ void Positioning::objectAdded(QObject *obj)
                 });
                 m_nonProxyPositionInfoSources.clear();
             }
-            QMetaObject::invokeMethod(geoInfoSource, "setInterface", Q_ARG(PositioningInterface *, this));
+            // clang-format off
+            QMetaObject::invokeMethod(geoInfoSource, "setInterface", Q_ARG(PositioningInterface*, this));
+            // clang-format on
         }
     }
 }

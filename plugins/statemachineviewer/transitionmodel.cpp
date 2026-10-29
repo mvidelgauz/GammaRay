@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Stephen Kelly <stephen.kelly@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -22,8 +22,6 @@
 #include <QStringList>
 
 #include <algorithm>
-
-// #include <modeltest.h>
 
 using namespace GammaRay;
 
@@ -133,7 +131,7 @@ int TransitionModel::rowCount(const QModelIndex &parent) const
     Q_D(const TransitionModel);
     if (!d->m_state)
         return 0;
-    return d->children(d->mapModelIndex2QObject(parent)).count();
+    return d->children(d->mapModelIndex2QObject(parent)).size();
 }
 
 QModelIndex TransitionModel::index(int row, int column, const QModelIndex &parent) const

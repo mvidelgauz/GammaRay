@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -15,8 +15,7 @@
 
 #include <common/objectbroker.h>
 
-#include <3rdparty/qt/modeltest.h>
-
+#include <QAbstractItemModelTester>
 #include <QItemSelectionModel>
 #include <QLibraryInfo>
 #include <QTranslator>
@@ -33,14 +32,14 @@ private slots:
 
         auto t1 = new QTranslator;
         t1->setObjectName(QStringLiteral("t1"));
-        QVERIFY(t1->load(QLibraryInfo::location(QLibraryInfo::TranslationsPath) + QStringLiteral("/qt_sv.qm")));
+        QVERIFY(t1->load(QLibraryInfo::path(QLibraryInfo::TranslationsPath) + QStringLiteral("/qt_pt_PT.qm")));
         QVERIFY(!t1->isEmpty());
         QCoreApplication::installTranslator(t1);
         QTest::qWait(1);
 
         auto *model = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.TranslatorsModel"));
         QVERIFY(model);
-        ModelTest modelTest(model);
+        QAbstractItemModelTester modelTest(model);
         QCOMPARE(model->rowCount(), 2);
 
         auto t2 = new QTranslator;
@@ -71,14 +70,14 @@ private slots:
 
         auto t1 = new QTranslator;
         t1->setObjectName(QStringLiteral("t1"));
-        QVERIFY(t1->load(QLibraryInfo::location(QLibraryInfo::TranslationsPath) + QStringLiteral("/qt_sv.qm")));
+        QVERIFY(t1->load(QLibraryInfo::path(QLibraryInfo::TranslationsPath) + QStringLiteral("/qt_pt_PT.qm")));
         QVERIFY(!t1->isEmpty());
         QCoreApplication::installTranslator(t1);
         QTest::qWait(1);
 
         auto *translatorModel = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.TranslatorsModel"));
         QVERIFY(translatorModel);
-        ModelTest TranslationsModelTest(translatorModel);
+        QAbstractItemModelTester TranslationsModelTest(translatorModel);
         QCOMPARE(translatorModel->rowCount(), 2);
 
         auto translatorSelection = ObjectBroker::selectionModel(translatorModel);
@@ -87,7 +86,7 @@ private slots:
 
         auto *model = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.TranslationsModel"));
         QVERIFY(model);
-        ModelTest modelTest(model);
+        QAbstractItemModelTester modelTest(model);
 
         QCoreApplication::translate("context", "key", nullptr);
         QCoreApplication::translate(nullptr, "key", nullptr);

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -43,10 +43,14 @@ protected:
 
 private slots:
     void slotPropertyChanged(int first, int last);
+    void slotPropertyAboutToBeAdded(int first, int last);
     void slotPropertyAdded(int first, int last);
+    void slotPropertyAboutToBeRemoved(int first, int last);
     void slotPropertyRemoved(int first, int last);
 
 private:
+    int offsetOf(const QObject *adaptor) const;
+
     QVector<PropertyAdaptor *> m_propertyAdaptors;
 };
 }

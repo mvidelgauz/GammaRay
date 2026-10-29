@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -18,11 +18,7 @@
 
 #include <QFile>
 #include <QStringList>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QStringDecoder>
-#else
-#include <QTextCodec>
-#endif
 
 namespace {
 static QString readFile(const QString &filePath, const QByteArray &codec = QByteArrayLiteral("UTF-8"))
@@ -39,16 +35,7 @@ static QString readFile(const QString &filePath, const QByteArray &codec = QByte
         return QString();
     }
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     return QStringDecoder(codec).decode(file.readAll());
-#else
-    QTextCodec *tc = QTextCodec::codecForName(codec);
-    if (!tc) {
-        tc = QTextCodec::codecForLocale();
-    }
-
-    return tc->toUnicode(file.readAll());
-#endif
 }
 }
 

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Christoph Sterz <christoph.sterz@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -23,8 +23,6 @@
 #include <common/remoteviewinterface.h>
 #include <common/remoteviewframe.h>
 
-#include <3rdparty/qt/modeltest.h>
-
 #include <QQuickView>
 #include <QItemSelectionModel>
 #include <QSignalSpy>
@@ -43,8 +41,9 @@ private:
         qputenv("GAMMARAY_ServerAddress", GAMMARAY_DEFAULT_LOCAL_TCP_URL);
         Hooks::installHooks();
         Probe::startupHookReceived();
-        // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
+        // NOLINTNEXTLINE (clang-analyzer-cplusplus.NewDeleteLeaks)
         new ProbeCreator(ProbeCreator::Create);
+        // NOLINTNEXTLINE (clang-analyzer-cplusplus.NewDeleteLeaks)
         QTest::qWait(1); // event loop re-entry
     }
 

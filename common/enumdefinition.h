@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -69,7 +69,7 @@ public:
     /*! Returns the individual elements of this enum.
      *  That is, the key/value pairs of its definition.
      */
-    QVector<EnumDefinitionElement> elements() const;
+    const QVector<EnumDefinitionElement> &elements() const;
 
     //! @cond internal
     void setElements(const QVector<EnumDefinitionElement> &elements);

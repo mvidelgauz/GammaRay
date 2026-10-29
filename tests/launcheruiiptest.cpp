@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Christoph Sterz <christoph.sterz@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -95,7 +95,7 @@ private slots:
         QVERIFY(lineEdit);
         lineEdit->setText(userInput);
         for (size_t i = 0; i < 500; i++) {
-            if (addressParsedSpy.count() > 0)
+            if (addressParsedSpy.size() > 0)
                 break;
             QTest::qWait(1);
         }
@@ -126,7 +126,7 @@ private slots:
         QVERIFY(lineEdit);
         lineEdit->setText(userInput);
         for (size_t i = 0; i < 1000; i++) {
-            if (dnsDoneSpy.count() > 0)
+            if (dnsDoneSpy.size() > 0)
                 break;
             QTest::qWait(1);
             if (i == 999)

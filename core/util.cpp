@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -20,8 +20,6 @@
 #include "varianthandler.h"
 #include "objectdataprovider.h"
 #include "enumutil.h"
-
-#include <compat/qasconst.h>
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -42,11 +40,14 @@ using namespace std;
 QString Util::displayString(const QObject *object)
 {
     if (!object)
-        return QStringLiteral("QObject(0x0)");
+        return QStringLiteral("0x0 (QObject)");
     const auto name = ObjectDataProvider::name(object);
     if (name.isEmpty())
-        return QStringLiteral("%1[this=%2]").arg(object->metaObject()->className(), addressToString(object));
-    return name;
+        return QStringLiteral("%1 (%2)").arg(addressToString(object), object->metaObject()->className());
+    const auto typeName = ObjectDataProvider::typeName(object);
+    if (name == typeName)
+        return name;
+    return QStringLiteral("%1 (%2)").arg(ObjectDataProvider::typeName(object), name);
 }
 
 QString Util::shortDisplayString(const QObject *object)
@@ -161,7 +162,7 @@ static IconDatabase readIconData()
             propString.chop(4);
             const QStringList props = propString.split(';');
             IconCacheEntry::PropertyMap propertyMap;
-            for (const QString &prop : qAsConst(props)) {
+            for (const QString &prop : std::as_const(props)) {
                 const QStringList keyValue = prop.split(QLatin1Char('='));
                 if (keyValue.size() != 2)
                     continue;
@@ -181,10 +182,10 @@ static int iconIdForObject(const QMetaObject *mo, const QObject *obj)
 
     auto it = iconDataBase.constFind(QLatin1String(mo->className()));
     if (it != iconDataBase.end()) {
-        for (const auto &propertyIcon : qAsConst(it->propertyIcons)) {
+        for (const auto &propertyIcon : std::as_const(it->propertyIcons)) {
             bool allMatch = true;
             Q_ASSERT(!propertyIcon.second.isEmpty());
-            for (const IconCacheEntry::PropertyPair &keyValue : qAsConst(propertyIcon.second)) {
+            for (const IconCacheEntry::PropertyPair &keyValue : std::as_const(propertyIcon.second)) {
                 if (stringifyProperty(obj, keyValue.first) != keyValue.second) {
                     allMatch = false;
                     break;

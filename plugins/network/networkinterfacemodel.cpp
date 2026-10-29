@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -80,8 +80,8 @@ QVariant NetworkInterfaceModel::data(const QModelIndex &index, int role) const
                 return MetaEnum::flagsToString(iface.flags(), interface_flag_table);
             }
         } else if (index.column() == 0) {
-            const auto &iface = m_interfaces.at(index.internalId());
-            const auto &addr = iface.addressEntries().at(index.row());
+            const auto iface = m_interfaces.at(index.internalId());
+            const auto addr = iface.addressEntries().at(index.row());
             return QString(addr.ip().toString() + QLatin1Char('/') + addr.netmask().toString());
         }
     }

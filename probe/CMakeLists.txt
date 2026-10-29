@@ -1,13 +1,14 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
+
 if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
-    set(gammaray_probe_srcs probecreator.cpp hooks.cpp)
+    set(gammaray_probe_srcs hooks.cpp hooks.h probecreator.cpp probecreator.h)
 
     list(APPEND gammaray_probe_srcs entry_unix.cpp)
 
@@ -87,19 +88,11 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
             install(TARGETS gammaray_probe ${INSTALL_TARGETS_DEFAULT_ARGS})
         endif()
         if(ANDROID)
-            if(QtCore_VERSION VERSION_LESS 5.14.0)
-                install(
-                    FILES gammaray_probe-android-dependencies.xml
-                    RENAME gammaray_probe-${GAMMARAY_PROBE_ABI}-android-dependencies.xml
-                    DESTINATION ${LIB_INSTALL_DIR}
-                )
-            else()
-                install(
-                    FILES gammaray_probe-android-dependencies.xml
-                    RENAME gammaray_probe-${GAMMARAY_PROBE_ABI}_${ANDROID_ABI}-android-dependencies.xml
-                    DESTINATION ${LIB_INSTALL_DIR}
-                )
-            endif()
+            install(
+                FILES gammaray_probe-android-dependencies.xml
+                RENAME gammaray_probe-${GAMMARAY_PROBE_ABI}_${ANDROID_ABI}-android-dependencies.xml
+                DESTINATION ${LIB_INSTALL_DIR}
+            )
         endif()
     endif()
 

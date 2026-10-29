@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Giulio Camuffo <giulio.camuffo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -27,8 +27,6 @@
 #include <common/objectid.h>
 #include <common/objectmodel.h>
 #include <common/remoteviewframe.h>
-
-#include <compat/qasconst.h>
 
 #include <core/metaobject.h>
 #include <core/metaobjectrepository.h>
@@ -152,7 +150,7 @@ public:
     void setConnected(bool c)
     {
         m_connected = c;
-        for (int i = 0; i < m_lines.count(); ++i) {
+        for (int i = 0; i < m_lines.size(); ++i) {
             const Message &m = m_lines.at(i);
             emit m_inspector->logMessage(m.pid, m.time, m.line);
         }
@@ -247,7 +245,7 @@ public:
 
     void clear()
     {
-        for (Resource *res : qAsConst(m_resources)) {
+        for (Resource *res : std::as_const(m_resources)) {
             destroy(res);
         }
         m_resources.clear();
@@ -255,7 +253,7 @@ public:
 
     void destroy(Resource *res)
     {
-        for (Resource *child : qAsConst(res->children)) {
+        for (Resource *child : std::as_const(res->children)) {
             destroy(child);
         }
 
@@ -280,7 +278,7 @@ public:
     {
         Resource *parentres = exists(parent) ? static_cast<Resource *>(parent.internalPointer()) : nullptr;
         const auto &resources = parentres ? parentres->children : m_resources;
-        if (resources.count() <= row) {
+        if (resources.size() <= row) {
             return {};
         }
         Resource *res = resources.at(row);
@@ -308,7 +306,7 @@ public:
     {
         wl_resource *parentResource = nullptr; // wl_resource_get_parent(res);
         Resource *parent = parentResource ? Resource::fromWlResource(parentResource) : nullptr;
-        int count = parent ? parent->children.count() : m_resources.count();
+        int count = parent ? parent->children.size() : m_resources.size();
 
         beginInsertRows(parent ? index(parent) : QModelIndex(), count, count);
 
@@ -358,7 +356,7 @@ public:
             return 0;
 
         Resource *res = static_cast<Resource *>(index.internalPointer());
-        return res ? res->children.count() : m_resources.count();
+        return res ? res->children.size() : m_resources.size();
     }
 
     int columnCount(const QModelIndex &) const override

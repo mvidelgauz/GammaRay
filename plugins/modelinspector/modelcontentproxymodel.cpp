@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -53,15 +53,6 @@ void ModelContentProxyModel::setSelectionModel(QItemSelectionModel *selectionMod
 
 QVariant ModelContentProxyModel::data(const QModelIndex &proxyIndex, int role) const
 {
-    // Work around crash in QQmlListModel for unknown roles
-#if QT_VERSION < QT_VERSION_CHECK(5, 6, 1)
-    if (sourceModel() && sourceModel()->inherits("QQmlListModel")) {
-        // data on anything not in roleNames() crashes
-        if (!sourceModel()->roleNames().contains(role))
-            return QVariant();
-    }
-#endif
-
     // we override this below, so convey enabled state via a custom role
     // since disabled is less common then enabled, only transfer disabled states
     if (role == DisabledRole) {

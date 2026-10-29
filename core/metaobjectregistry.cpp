@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -27,7 +27,6 @@
 #include <algorithm>
 #include <cassert>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QBitArray>
 #include <QEasingCurve>
 #include <QUuid>
@@ -39,7 +38,6 @@
 #include <QCborMap>
 #include <QModelIndex>
 #include <private/qmetatype_p.h>
-#endif
 
 using namespace GammaRay;
 
@@ -204,9 +202,8 @@ void MetaObjectRegistry::objectAdded(QObject *obj)
     }
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 // Lifted from Qt
-struct MetaTypeCoreHelper : public QMetaTypeModuleHelper
+struct MetaTypeCoreHelper final : public QMetaTypeModuleHelper
 {
     template<typename T, typename LiteralWrapper = std::conditional_t<std::is_same_v<T, QString>, QLatin1String, const char *>>
     static inline bool convertToBool(const T &source)
@@ -215,7 +212,11 @@ struct MetaTypeCoreHelper : public QMetaTypeModuleHelper
         return !(str.isEmpty() || str == LiteralWrapper("0") || str == LiteralWrapper("false"));
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 11, 0)
+    static const QtPrivate::QMetaTypeInterface *interfaceForType(int type)
+#else
     const QtPrivate::QMetaTypeInterface *interfaceForType(int type) const override
+#endif
     {
         switch (type) {
             QT_FOR_EACH_STATIC_PRIMITIVE_TYPE(QT_METATYPE_CONVERT_ID_TO_TYPE)
@@ -229,16 +230,33 @@ struct MetaTypeCoreHelper : public QMetaTypeModuleHelper
     }
 };
 
-Q_GLOBAL_STATIC(MetaTypeCoreHelper, qMetaTypeCoreHelper)
+static const QMetaTypeModuleHelper *qMetaTypeCoreHelper()
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 11, 0)
+    static MetaTypeCoreHelper helper {
+        MetaTypeCoreHelper::interfaceForType,
+    };
+#else
+    static MetaTypeCoreHelper helper;
+#endif
+    return &helper;
+}
 
 static const QMetaTypeModuleHelper *qModuleHelperForType(int type)
 {
     if (type <= QMetaType::LastCoreType)
-        return qMetaTypeCoreHelper;
+        return qMetaTypeCoreHelper();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 11, 0)
+    if (type >= QMetaType::FirstGuiType && type <= QMetaType::LastGuiType)
+        return &qMetaTypeGuiHelper;
+    else if (type >= QMetaType::FirstWidgetsType && type <= QMetaType::LastWidgetsType)
+        return &qMetaTypeWidgetsHelper;
+#else
     if (type >= QMetaType::FirstGuiType && type <= QMetaType::LastGuiType)
         return qMetaTypeGuiHelper;
     else if (type >= QMetaType::FirstWidgetsType && type <= QMetaType::LastWidgetsType)
         return qMetaTypeWidgetsHelper;
+#endif
     return nullptr;
 }
 
@@ -248,34 +266,22 @@ bool MetaObjectRegistry::isTypeIdRegistered(int type)
         return moduleHelper->interfaceForType(type) != nullptr;
     return false;
 }
-#endif
 
 void MetaObjectRegistry::scanMetaTypes()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     for (int mtId = 0; mtId <= QMetaType::User; ++mtId) {
         if (!isTypeIdRegistered(mtId))
             continue;
-        if (const QMetaObject *mt = QMetaType::metaObjectForType(mtId)) {
+        if (const QMetaObject *mt = QMetaType(mtId).metaObject()) {
             addMetaObject(mt);
         }
     }
 
     for (int mtId = QMetaType::User + 1; QMetaType::isRegistered(mtId); ++mtId) {
-        if (const QMetaObject *mt = QMetaType::metaObjectForType(mtId))
+        if (const QMetaObject *mt = QMetaType(mtId).metaObject())
             addMetaObject(mt);
     }
     addMetaObject(&Qt::staticMetaObject);
-#else
-    for (int mtId = 0; mtId <= QMetaType::User || QMetaType::isRegistered(mtId); ++mtId) {
-        if (!QMetaType::isRegistered(mtId))
-            continue;
-        const auto *mt = QMetaType::metaObjectForType(mtId);
-        if (mt)
-            addMetaObject(mt);
-    }
-    addMetaObject(&staticQtMetaObject);
-#endif
 }
 
 const QMetaObject *MetaObjectRegistry::addMetaObject(const QMetaObject *metaObject, bool mergeDynamic)

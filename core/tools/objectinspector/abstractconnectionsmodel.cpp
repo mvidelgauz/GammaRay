@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -16,8 +16,6 @@
 
 #include "common/tools/objectinspector/connectionsmodelroles.h"
 #include "core/util.h"
-
-#include <compat/qasconst.h>
 
 #include <QMetaMethod>
 #include <QStringList>
@@ -143,7 +141,7 @@ QMap<int, QVariant> AbstractConnectionsModel::itemData(const QModelIndex &index)
 
 bool AbstractConnectionsModel::isDuplicate(const QVector<Connection> &connections, const AbstractConnectionsModel::Connection &conn)
 {
-    for (const Connection &c : qAsConst(connections)) {
+    for (const Connection &c : std::as_const(connections)) {
         if (&c == &conn)
             continue;
         if (c.endpoint == conn.endpoint

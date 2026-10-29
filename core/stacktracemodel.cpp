@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -92,7 +92,7 @@ QStringList StackTraceModel::fullTrace() const
 {
     QStringList bt;
     bt.reserve(m_frames.size());
-    for (const auto &frame : qAsConst(m_frames)) {
+    for (const auto &frame : std::as_const(m_frames)) {
         if (frame.location.isValid())
             bt.push_back(frame.name + QLatin1String(" (") + frame.location.displayString() + QLatin1Char(')'));
         else

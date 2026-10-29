@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -31,11 +31,11 @@ struct primitive_element_t
 
 #define MAKE_PE(primitive)                                           \
     {                                                                \
-#primitive, QStyle::primitive, &StyleOption::makeStyleOption \
+        #primitive, QStyle::primitive, &StyleOption::makeStyleOption \
     }
 #define MAKE_PE_X(primitive, factory)                        \
     {                                                        \
-#primitive, QStyle::primitive, &StyleOption::factory \
+        #primitive, QStyle::primitive, &StyleOption::factory \
     }
 
 static const primitive_element_t primititveElements[] = {
@@ -64,9 +64,6 @@ static const primitive_element_t primititveElements[] = {
     MAKE_PE(PE_IndicatorArrowUp),
     MAKE_PE(PE_IndicatorBranch),
     MAKE_PE(PE_IndicatorButtonDropDown),
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    MAKE_PE(PE_IndicatorViewItemCheck),
-#endif
     MAKE_PE_X(PE_IndicatorCheckBox, makeButtonStyleOption),
     MAKE_PE(PE_IndicatorDockWidgetResizeHandle),
     MAKE_PE_X(PE_IndicatorHeaderArrow, makeHeaderStyleOption),

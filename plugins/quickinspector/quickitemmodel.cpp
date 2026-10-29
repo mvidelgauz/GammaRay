@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -330,14 +330,6 @@ void QuickItemModel::itemReparented(QQuickItem *item)
     auto dit = std::lower_bound(destSiblings.begin(), destSiblings.end(), item);
     const int destRow = std::distance(destSiblings.begin(), dit);
 
-    // as of Qt 5.10, QSFPM translates moves into layout changes, which is way worse for us than remove/insert
-#if 0
-    beginMoveRows(sourceParentIndex, sourceRow, sourceRow, destParentIndex, destRow);
-    destSiblings.insert(dit, item);
-    sourceSiblings.erase(sit);
-    m_childParentMap.insert(item, destParent);
-    endMoveRows();
-#else
     beginRemoveRows(sourceParentIndex, sourceRow, sourceRow);
     sourceSiblings.erase(sit);
     m_childParentMap.remove(item);
@@ -346,7 +338,6 @@ void QuickItemModel::itemReparented(QQuickItem *item)
     destSiblings.insert(dit, item);
     m_childParentMap.insert(item, destParent);
     endInsertRows();
-#endif
 }
 
 void QuickItemModel::itemWindowChanged(QQuickItem *item)

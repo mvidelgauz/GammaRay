@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -23,13 +23,8 @@ GraphicsSceneView::GraphicsSceneView(QWidget *parent)
     ui->setupUi(this);
 
     QFontMetrics fm(ui->sceneCoordLabel->font());
-#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
-    ui->sceneCoordLabel->setFixedWidth(fm.width(QStringLiteral("00000.00 x 00000.00")));
-    ui->itemCoordLabel->setFixedWidth(fm.width(QStringLiteral("00000.00 x 00000.00")));
-#else
     ui->sceneCoordLabel->setFixedWidth(fm.horizontalAdvance(QStringLiteral("00000.00 x 00000.00")));
     ui->itemCoordLabel->setFixedWidth(fm.horizontalAdvance(QStringLiteral("00000.00 x 00000.00")));
-#endif
     connect(ui->graphicsView, &GraphicsView::sceneCoordinatesChanged,
             this, &GraphicsSceneView::sceneCoordinatesChanged);
     connect(ui->graphicsView, &GraphicsView::itemCoordinatesChanged,

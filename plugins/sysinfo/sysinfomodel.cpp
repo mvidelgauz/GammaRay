@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2018-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2018 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -15,37 +15,42 @@
 
 #include <QLibraryInfo>
 #include <QSysInfo>
+#include <array>
 
 using namespace GammaRay;
 
 struct sysinfo_t
 {
     QString (*func)();
-    const char *name;
+    const QString name;
 };
 
-#define S(x)            \
-    {                   \
-        QSysInfo::x, #x \
+#define S(x)                                 \
+    sysinfo_t                                \
+    {                                        \
+                                             \
+        QSysInfo::x, QString::fromLatin1(#x) \
     }
-static const sysinfo_t sysInfoTable[] = {
+
+static const std::array<sysinfo_t, 10> &sysInfoTable()
+{
+    static const std::array<sysinfo_t, 10> t = {
 #if !defined(Q_CC_MSVC) || _MSC_VER > 1600 // krazy:exclude=cpp to deal with older MS compilers
-    { []() { return QString::fromLatin1(QLibraryInfo::build()); }, "build" },
+        sysinfo_t { []() { return QString::fromLatin1(QLibraryInfo::build()); }, "build" },
 #endif
-    S(buildAbi),
-    S(buildCpuArchitecture),
-    S(currentCpuArchitecture),
-    S(kernelType),
-    S(kernelVersion),
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-    S(machineHostName),
-#endif
-    S(prettyProductName),
-    S(productType),
-    S(productVersion)
-};
+        S(buildAbi),
+        S(buildCpuArchitecture),
+        S(currentCpuArchitecture),
+        S(kernelType),
+        S(kernelVersion),
+        S(machineHostName),
+        S(prettyProductName),
+        S(productType),
+        S(productVersion)
+    };
+    return t;
+}
 #undef S
-static const auto sysInfoTableSize = sizeof(sysInfoTable) / sizeof(sysinfo_t);
 
 SysInfoModel::SysInfoModel(QObject *parent)
     : QAbstractTableModel(parent)
@@ -62,7 +67,7 @@ int SysInfoModel::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
         return 0;
-    return sysInfoTableSize;
+    return ( int )sysInfoTable().size();
 }
 
 QVariant SysInfoModel::data(const QModelIndex &index, int role) const
@@ -73,9 +78,9 @@ QVariant SysInfoModel::data(const QModelIndex &index, int role) const
     if (role == Qt::DisplayRole) {
         switch (index.column()) {
         case 0:
-            return sysInfoTable[index.row()].name;
+            return sysInfoTable()[index.row()].name;
         case 1:
-            return sysInfoTable[index.row()].func();
+            return sysInfoTable()[index.row()].func();
         }
     }
 

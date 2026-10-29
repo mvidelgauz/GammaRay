@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Anton Kreuzkamp <anton.kreukamp@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -49,10 +49,10 @@ bool GammaRay::PropertyFilter::matches(const GammaRay::PropertyData &prop) const
     if (!m_typeName.isEmpty() && prop.typeName() != m_typeName) {
         return false;
     }
-    if (m_accessFlags && (prop.accessFlags() & m_accessFlags) == m_accessFlags) {
+    if (m_accessFlags && (prop.accessFlags() & m_accessFlags) != m_accessFlags) {
         return false;
     }
-    if (m_propertyFlags && (prop.propertyFlags() & m_propertyFlags) == m_propertyFlags) {
+    if (m_propertyFlags && (prop.propertyFlags() & m_propertyFlags) != m_propertyFlags) {
         return false;
     }
     return true;

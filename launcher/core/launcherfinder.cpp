@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -53,12 +53,9 @@ QString LauncherFinder::findLauncher(LauncherFinder::Type type)
         appPaths.append(appPath);
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    using Qt::endl;
-#endif
     qWarning() << fileName << "not found in the expected location(s):";
-    qWarning() << appPaths.join(QStringLiteral(", ")) << endl
+    qWarning() << appPaths.join(QStringLiteral(", ")) << Qt::endl
                << "continuing anyway, hoping for it to be in PATH.";
-    qWarning() << "This is likely a setup problem." << endl;
+    qWarning() << "This is likely a setup problem." << Qt::endl;
     return fileName;
 }

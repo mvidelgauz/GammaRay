@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -37,7 +37,7 @@ WidgetPaintAnalyzerExtension::WidgetPaintAnalyzerExtension(PropertyController *c
         m_paintAnalyzer = new PaintAnalyzer(aName, controller);
     }
 
-    QObject::connect(m_paintAnalyzer, &PaintAnalyzer::requestUpdate, [this]() { analyze(); });
+    QObject::connect(m_paintAnalyzer, &PaintAnalyzer::requestUpdate, m_paintAnalyzer, [this]() { analyze(); });
 }
 
 WidgetPaintAnalyzerExtension::~WidgetPaintAnalyzerExtension() = default;

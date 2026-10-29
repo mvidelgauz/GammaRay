@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -28,6 +28,7 @@
 #include <QSignalSpy>
 #include <QTest>
 
+#include <limits>
 #include <memory>
 
 #ifdef Q_OS_WIN
@@ -87,12 +88,12 @@ private slots:
 
         QVERIFY(launcher.start());
         startSpy.wait(60000);
-        QCOMPARE(startSpy.count(), 1);
-        QCOMPARE(finishSpy.count(), 0);
+        QCOMPARE(startSpy.size(), 1);
+        QCOMPARE(finishSpy.size(), 0);
 
         launcher.stop();
         finishSpy.wait(10000);
-        QCOMPARE(finishSpy.count(), 1);
+        QCOMPARE(finishSpy.size(), 1);
     }
 
 #ifdef HAVE_QT_WIDGETS
@@ -118,18 +119,104 @@ private slots:
 
         QVERIFY(launcher.start());
         startSpy.wait(60000);
-        QCOMPARE(startSpy.count(), 1);
-        QCOMPARE(finishSpy.count(), 0);
+        QCOMPARE(startSpy.size(), 1);
+        QCOMPARE(finishSpy.size(), 0);
 
         launcher.stop();
         finishSpy.wait(10000);
-        QCOMPARE(finishSpy.count(), 1);
+        QCOMPARE(finishSpy.size(), 1);
     }
 #endif
+
+#ifdef HAVE_QT_WIDGETS
+    // the probe reports no server address then, which must not count as the target not responding
+    static void testInProcessWithoutRemoteAccess()
+    {
+        if (!hasInjector("preload") && !hasInjector("windll"))
+            QSKIP("no launch injector");
+
+        LaunchOptions options;
+        options.setUiMode(LaunchOptions::InProcessUi);
+        options.setProbeSetting(QStringLiteral("RemoteAccessEnabled"), false);
+        QString exePath = QLatin1String(TESTBIN_DIR "/minimalwidgetapplication");
+#ifdef Q_OS_WIN
+        exePath += QLatin1String(".exe");
+#endif
+        ProbeABIDetector detector;
+        options.setProbeABI(ProbeFinder::findBestMatchingABI(detector.abiForExecutable(exePath)));
+        options.setLaunchArguments(QStringList() << exePath);
+        qputenv("GAMMARAY_LAUNCHER_TIMEOUT", "1");
+        Launcher launcher(options);
+        qunsetenv("GAMMARAY_LAUNCHER_TIMEOUT");
+
+        QSignalSpy finishSpy(&launcher, &Launcher::finished);
+        QVERIFY(launcher.start());
+        QVERIFY(!finishSpy.wait(3000));
+        QCOMPARE(launcher.exitCode(), 0);
+
+        launcher.stop();
+        QVERIFY(finishSpy.wait(10000));
+    }
+#endif
+
+    // reported right away, instead of waiting for the target to time out
+    static void testServerLaunchError()
+    {
+        if (!hasInjector("preload") && !hasInjector("windll"))
+            QSKIP("no launch injector");
+
+        LaunchOptions options;
+        options.setUiMode(LaunchOptions::NoUi);
+        // an address of no interface of this machine (TEST-NET-1), so listening fails
+        options.setProbeSetting(QStringLiteral("ServerAddress"), QStringLiteral("tcp://192.0.2.1"));
+        QString exePath = QLatin1String(TESTBIN_DIR "/minimalcoreapplication");
+#ifdef Q_OS_WIN
+        exePath += QLatin1String(".exe");
+#endif
+        ProbeABIDetector detector;
+        options.setProbeABI(ProbeFinder::findBestMatchingABI(detector.abiForExecutable(exePath)));
+        options.setLaunchArguments(QStringList() << exePath);
+        Launcher launcher(options);
+
+        QSignalSpy finishSpy(&launcher, &Launcher::finished);
+        QVERIFY(launcher.start());
+        QVERIFY(finishSpy.wait(20000));
+        QCOMPARE(launcher.exitCode(), 1);
+        QVERIFY2(launcher.errorMessage().contains(QLatin1String("Failed to start server")),
+                 qPrintable(launcher.errorMessage()));
+    }
+
+    // the debugger keeps going and exits normally, the failure must still be reported
+    static void testAttachFailure()
+    {
+        if (!hasInjector("gdb"))
+            QSKIP("gdb injector not available");
+
+        LaunchOptions options;
+        options.setUiMode(LaunchOptions::NoUi);
+        options.setInjectorType(QStringLiteral("gdb"));
+        options.setPid(std::numeric_limits<int>::max()); // no such process
+        ProbeABIDetector detector;
+        options.setProbeABI(ProbeFinder::findBestMatchingABI(
+            detector.abiForExecutable(QLatin1String(TESTBIN_DIR "/minimalcoreapplication"))));
+        Launcher launcher(options);
+
+        QSignalSpy finishSpy(&launcher, &Launcher::finished);
+        QVERIFY(launcher.start());
+        QVERIFY(finishSpy.wait(20000));
+        QVERIFY(launcher.exitCode() != 0);
+        QVERIFY2(launcher.errorMessage().contains(QLatin1String("could not attach")),
+                 qPrintable(launcher.errorMessage()));
+    }
 
     static void testAttach()
     {
         QProcess target;
+        auto cleanup = kdScopeGuard([&target] {
+            target.kill();
+            target.waitForFinished();
+        });
+
         target.setProcessChannelMode(QProcess::ForwardedChannels);
         target.start(QLatin1String(TESTBIN_DIR "/minimalcoreapplication"), {}, QProcess::ReadWrite);
         QVERIFY(target.waitForStarted());
@@ -148,10 +235,7 @@ private slots:
         QVERIFY(launcher.start());
 
         spy.wait(30000);
-        QCOMPARE(spy.count(), 1);
-
-        target.kill();
-        target.waitForFinished();
+        QCOMPARE(spy.size(), 1);
     }
 };
 

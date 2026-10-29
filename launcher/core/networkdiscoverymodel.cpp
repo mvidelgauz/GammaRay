@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -18,9 +18,7 @@
 #include <QDataStream>
 #include <QUdpSocket>
 #include <QTimer>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
 #include <QNetworkDatagram>
-#endif
 
 #include <algorithm>
 
@@ -50,16 +48,9 @@ NetworkDiscoveryModel::~NetworkDiscoveryModel() = default;
 void NetworkDiscoveryModel::processPendingDatagrams()
 {
     while (m_socket->hasPendingDatagrams()) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
         const auto datagram = m_socket->receiveDatagram();
         const auto buffer = datagram.data();
         const auto senderAddr = datagram.senderAddress();
-#else
-        QByteArray buffer;
-        buffer.resize(m_socket->pendingDatagramSize());
-        m_socket->readDatagram(buffer.data(), buffer.size());
-        const QHostAddress senderAddr;
-#endif
 
         QDataStream stream(buffer);
         qint32 broadcastVersion;

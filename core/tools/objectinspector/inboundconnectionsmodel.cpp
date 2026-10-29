@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -16,10 +16,7 @@
 #include "core/probe.h"
 
 #include <private/qobject_p.h>
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 #include <private/qobject_p_p.h>
-#endif
 
 using namespace GammaRay;
 
@@ -44,14 +41,9 @@ QVector<AbstractConnectionsModel::Connection> InboundConnectionsModel::inboundCo
 {
     QVector<Connection> connections;
     QObjectPrivate *d = QObjectPrivate::get(object);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     QObjectPrivate::ConnectionData *cd = d->connections.loadRelaxed();
     if (cd && cd->senders) {
         auto *senders = cd->senders;
-#else
-    if (d->senders) {
-        auto *senders = d->senders;
-#endif
         for (QObjectPrivate::Connection *s = senders; s; s = s->next) {
             if (!s->sender || Probe::instance()->filterObject(s->sender))
                 continue;

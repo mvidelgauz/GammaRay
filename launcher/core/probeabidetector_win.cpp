@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -18,8 +18,6 @@
 #include "pefile.h"
 
 #include <common/commonutils.h>
-
-#include <compat/qasconst.h>
 
 #include <QDebug>
 #include <QDir>
@@ -55,19 +53,19 @@ static QStringList dllSearchPaths(const QString &exePath)
     TCHAR syspath[256];
     UINT len = GetSystemDirectoryW(syspath, sizeof(syspath));
     Q_ASSERT(len <= sizeof(syspath) && len > 0);
-    paths.push_back(QString::fromUtf16(reinterpret_cast<const ushort *>(syspath), len));
+    paths.push_back(QString::fromUtf16(reinterpret_cast<const char16_t *>(syspath), len));
 
     // (3) windows directory
     TCHAR dirpath[256];
     len = GetWindowsDirectoryW(dirpath, sizeof(dirpath));
     Q_ASSERT(len <= sizeof(dirpath));
-    paths.push_back(QString::fromUtf16(reinterpret_cast<const ushort *>(dirpath), len));
+    paths.push_back(QString::fromUtf16(reinterpret_cast<const char16_t *>(dirpath), len));
 
     // (4) current working dir
     paths.push_back(QDir::currentPath());
 
     // (5) PATH
-    const auto envPaths = QString::fromLocal8Bit(qgetenv("PATH"));
+    const auto envPaths = qEnvironmentVariable("PATH");
     paths += envPaths.split(';');
 
     return paths;
@@ -138,7 +136,7 @@ QString absoluteExecutablePath(const QString &path)
     }
 
     // attempt to appends missing .exe extensions
-    const auto pathExt = QString::fromLocal8Bit(qgetenv("PATHEXT")).toLower().split(QLatin1Char(';'));
+    const auto pathExt = qEnvironmentVariable("PATHEXT").toLower().split(QLatin1Char(';'));
     for (const auto &ext : pathExt) {
         const auto extendedPath = path + ext;
         if (QFile::exists(extendedPath)) {
@@ -157,13 +155,13 @@ QString ProbeABIDetector::qtCoreForExecutable(const QString &path)
     QSet<QString> checkedImports;
 
     while (!resolvedImports.isEmpty()) {
-        for (const auto &import : qAsConst(resolvedImports)) {
+        for (const auto &import : std::as_const(resolvedImports)) {
             if (containsQtCore(import.toUtf8()))
                 return import;
         }
 
         QStringList resolvedSubImports;
-        for (const auto &import : qAsConst(resolvedImports)) {
+        for (const auto &import : std::as_const(resolvedImports)) {
             PEFile f(import);
             if (!f.isValid())
                 continue;
@@ -199,9 +197,9 @@ QString ProbeABIDetector::qtCoreForProcess(quint64 pid) const
 
     for (bool hasNext = Module32First(snapshot, &me); hasNext;
          hasNext = Module32Next(snapshot, &me)) {
-        const QString module = QString::fromUtf16(reinterpret_cast<const ushort *>(me.szModule));
+        const QString module = QString::fromUtf16(reinterpret_cast<const char16_t *>(me.szModule));
         if (containsQtCore(module.toUtf8())) {
-            const QString path = QString::fromUtf16(reinterpret_cast<const ushort *>(me.szExePath));
+            const QString path = QString::fromUtf16(reinterpret_cast<const char16_t *>(me.szExePath));
             CloseHandle(snapshot);
             return path;
         }
@@ -215,6 +213,8 @@ static QString compilerFromLibraries(const QStringList &libraries)
     for (const QString &lib : libraries) {
         if (lib.startsWith(QLatin1String("libgcc"), Qt::CaseInsensitive))
             return "GNU";
+        if (lib.startsWith(QLatin1String("libc++."), Qt::CaseInsensitive))
+            return "Clang";
     }
 
     return "MSVC";

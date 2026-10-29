@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -22,6 +22,19 @@
 #include <QVector>
 
 namespace GammaRay {
+
+template<typename BaseProxy>
+void init(BaseProxy *)
+{
+}
+
+template<>
+inline void init<QSortFilterProxyModel>(QSortFilterProxyModel *proxy)
+{
+    proxy->setRecursiveFilteringEnabled(true);
+    proxy->setAutoAcceptChildRows(true);
+}
+
 /** Sort/filter proxy model for server-side use to pass through extra roles in itemData().
  *  Every remoted proxy model should be wrapped into this template, unless you already have
  *  a special implementation for itemData() handling this.
@@ -35,6 +48,7 @@ public:
         , m_sourceModel(nullptr)
         , m_active(false)
     {
+        init<BaseProxy>(this);
     }
 
     /** Additional roles used from the source model for transfer to the client. */
@@ -64,9 +78,13 @@ public:
 
     void setSourceModel(QAbstractItemModel *sourceModel) override
     {
+        // nobody uses the old source through us anymore
+        if (m_active && m_sourceModel && m_sourceModel != sourceModel)
+            Model::unused(m_sourceModel);
         m_sourceModel = sourceModel;
-        if (m_active && sourceModel) {
-            Model::used(sourceModel);
+        if (m_active) {
+            if (sourceModel)
+                Model::used(sourceModel);
             BaseProxy::setSourceModel(sourceModel);
         }
     }

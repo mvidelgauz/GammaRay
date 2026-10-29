@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -42,13 +42,13 @@ QStringList InjectorStylePlugin::keys()
 
 void InjectorStylePlugin::inject()
 {
-    const QByteArray probeDllPath = qgetenv("GAMMARAY_STYLEINJECTOR_PROBEDLL");
+    const QString probeDllPath = qEnvironmentVariable("GAMMARAY_STYLEINJECTOR_PROBEDLL");
     if (probeDllPath.isEmpty()) {
         qWarning("No probe DLL specified.");
         return;
     }
 
-    QLibrary probeDll(QString::fromLocal8Bit(probeDllPath));
+    QLibrary probeDll(probeDllPath);
     probeDll.setLoadHints(QLibrary::ResolveAllSymbolsHint);
     if (!probeDll.load()) {
         qWarning() << "Loading probe DLL failed:" << probeDll.errorString();

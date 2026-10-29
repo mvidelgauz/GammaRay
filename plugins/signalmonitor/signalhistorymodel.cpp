@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Mathias Hasselmann <mathias.hasselmann@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -239,6 +239,14 @@ void SignalHistoryModel::onObjectRemoved(QObject *object)
     data->object = nullptr;
     emit dataChanged(index(itemIndex, ObjectColumn), index(itemIndex, ObjectColumn)); // for ObjectIdRole
     emit dataChanged(index(itemIndex, EventColumn), index(itemIndex, EventColumn));
+}
+
+QModelIndex SignalHistoryModel::indexForObject(QObject *object) const
+{
+    const auto it = m_itemIndex.constFind(object);
+    if (it == m_itemIndex.constEnd())
+        return {};
+    return index(*it, ObjectColumn);
 }
 
 void SignalHistoryModel::onObjectFavorited(QObject *object)

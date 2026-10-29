@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -51,15 +51,21 @@ public:
 
     enum RenderMode
     {
+        ///< Nothing special is drawn.
         NormalRendering,
+        ///< Backs "Visualize Clipping" in the UI.
         VisualizeClipping,
+        ///< Backs "Visualize Overdraw" in the UI.
         VisualizeOverdraw,
+        ///< Backs "Visualize Batches" in the UI.
         VisualizeBatches,
+        ///< Backs "Visualize Changes" in the UI.
         VisualizeChanges,
+        ///< Backs "Visualize Controls" in the UI.
         VisualizeTraces,
     };
 
-    Q_ENUMS(RenderMode)
+    Q_ENUM(RenderMode)
     Q_DECLARE_FLAGS(Features, Feature)
 
     explicit QuickInspectorInterface(QObject *parent = nullptr);

@@ -1,21 +1,31 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
+
 set(gammaray_launcher_ui_srcs
-    promolabel.cpp
-    launcherwindow.cpp
-    launchpage.cpp
-    selftestpage.cpp
-    connectpage.cpp
     attachdialog.cpp
-    processmodel.cpp
-    processfiltermodel.cpp
+    attachdialog.h
+    connectpage.cpp
+    connectpage.h
+    launcherwindow.cpp
+    launcherwindow.h
+    launchpage.cpp
+    launchpage.h
     probeabimodel.cpp
+    probeabimodel.h
+    processfiltermodel.cpp
+    processfiltermodel.h
+    processmodel.cpp
+    processmodel.h
+    promolabel.cpp
+    promolabel.h
+    selftestpage.cpp
+    selftestpage.h
     resources/ui.qrc
 )
 if(NOT WIN32)
@@ -40,15 +50,13 @@ target_include_directories(
 )
 target_link_libraries(
     gammaray_launcher_ui
-    LINK_PUBLIC
-    gammaray_launcher
-    LINK_PRIVATE
-    Qt::Core
-    Qt::Concurrent
-    Qt::Gui
-    Qt::Widgets
-    Qt::Network
-    gammaray_ui
+    PUBLIC gammaray_launcher
+    PRIVATE Qt::Core
+            Qt::Concurrent
+            Qt::Gui
+            Qt::Widgets
+            Qt::Network
+            gammaray_ui
 )
 
 install(

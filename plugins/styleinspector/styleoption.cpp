@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -17,9 +17,6 @@
 
 using namespace GammaRay;
 
-// The following commit in qtbase.git deprecated versioned style class in 5.7.0
-//   95a6dc1 - QStyleOption*V<N>: mark as Q_DECL_DEPRECATED
-#if QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
 using QStyleOptionFrameCV = QStyleOptionFrame;
 using QStyleOptionToolBoxCV = QStyleOptionToolBox;
 using QStyleOptionTabCV = QStyleOptionTab;
@@ -27,15 +24,6 @@ using QStyleOptionTabBarBaseCV = QStyleOptionTabBarBase;
 using QStyleOptionTabWidgetFrameCV = QStyleOptionTabWidgetFrame;
 using QStyleOptionViewItemCV = QStyleOptionViewItem;
 using QStyleOptionProgressBarCV = QStyleOptionProgressBar;
-#else
-typedef QStyleOptionFrameV3 QStyleOptionFrameCV;
-typedef QStyleOptionToolBoxV2 QStyleOptionToolBoxCV;
-typedef QStyleOptionTabBarBaseV2 QStyleOptionTabBarBaseCV;
-typedef QStyleOptionTabV3 QStyleOptionTabCV;
-typedef QStyleOptionTabWidgetFrameV2 QStyleOptionTabWidgetFrameCV;
-typedef QStyleOptionViewItemV4 QStyleOptionViewItemCV;
-typedef QStyleOptionProgressBarV2 QStyleOptionProgressBarCV;
-#endif
 
 struct style_state_t
 {
@@ -45,7 +33,7 @@ struct style_state_t
 
 #define MAKE_STATE(state)     \
     {                         \
-#state, QStyle::state \
+        #state, QStyle::state \
     }
 
 static const style_state_t styleStates[] = {

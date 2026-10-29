@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -28,7 +28,7 @@ class PropertyExtendedEditor;
 class PropertyExtendedEditor : public QWidget
 {
     Q_OBJECT
-    Q_PROPERTY(QVariant value READ value WRITE setValue USER true)
+    Q_PROPERTY(QVariant value READ value WRITE setValue USER true) // clazy:exclude=qproperty-without-notify
 public:
     explicit PropertyExtendedEditor(QWidget *parent = nullptr);
     ~PropertyExtendedEditor();

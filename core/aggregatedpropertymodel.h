@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -56,12 +56,15 @@ private:
     static QVariant data(PropertyAdaptor *adaptor, const PropertyData &d, int column, int role);
     static bool hasLoop(PropertyAdaptor *adaptor, const QVariant &v);
     void reloadSubTree(PropertyAdaptor *parentAdaptor, int index);
+    void forgetSubTree(PropertyAdaptor *adaptor);
     bool isParentEditable(PropertyAdaptor *adaptor) const;
     void propagateWrite(PropertyAdaptor *adaptor);
 
 private slots:
     void propertyChanged(int first, int last);
+    void propertyAboutToBeAdded(int first, int last);
     void propertyAdded(int first, int last);
+    void propertyAboutToBeRemoved(int first, int last);
     void propertyRemoved(int first, int last);
     void objectInvalidated();
     void objectInvalidated(GammaRay::PropertyAdaptor *adaptor);
@@ -69,6 +72,8 @@ private slots:
 private:
     PropertyAdaptor *m_rootAdaptor = nullptr;
     mutable std::unordered_map<PropertyAdaptor *, QVector<PropertyAdaptor *>> m_parentChildrenMap;
+    // the change an adaptor announced with propertyAboutToBeAdded/Removed
+    PropertyAdaptor *m_pendingChangeAdaptor = nullptr;
     bool m_inhibitAdaptorCreation = false;
     bool m_readOnly = false;
 };

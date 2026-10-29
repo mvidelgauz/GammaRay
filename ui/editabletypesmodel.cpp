@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -38,7 +38,7 @@ QVariant EditableTypesModel::data(const QModelIndex &index, int role) const
 
     const int type = m_types.at(index.row());
     if (role == Qt::DisplayRole)
-        return QMetaType::typeName(type);
+        return QMetaType(type).name();
     else if (role == Qt::UserRole)
         return type;
 

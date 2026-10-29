@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Anton Kreuzkamp <anton.kreuzkamp@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -59,8 +59,11 @@ private:
     void clear();
     QSGNode *currentRootNode() const;
     void populateFromNode(QSGNode *node, bool emitSignals);
-    void collectItemNodes(QQuickItem *item);
+    void updateItemNodes() const;
+    void collectItemNodes(QQuickItem *item) const;
     bool recursivelyFindChild(QSGNode *root, QSGNode *child) const;
+    void addSubTree(QSGNode *node, bool emitSignals);
+    void removeNode(QSGNode *node, bool emitSignals);
     void pruneSubTree(QSGNode *node);
 
     QPointer<QQuickWindow> m_window;
@@ -68,8 +71,9 @@ private:
     QSGNode *m_rootNode;
     std::unordered_map<QSGNode *, QSGNode *> m_childParentMap;
     std::unordered_map<QSGNode *, QVector<QSGNode *>> m_parentChildMap;
-    std::unordered_map<QQuickItem *, QSGNode *> m_itemItemNodeMap;
-    std::unordered_map<QSGNode *, QQuickItem *> m_itemNodeItemMap;
+    mutable std::unordered_map<QQuickItem *, QSGNode *> m_itemItemNodeMap;
+    mutable std::unordered_map<QSGNode *, QQuickItem *> m_itemNodeItemMap;
+    mutable bool m_itemNodesDirty = true;
 };
 }
 

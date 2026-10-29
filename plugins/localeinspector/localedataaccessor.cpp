@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Stephen Kelly <stephen.kelly@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -86,8 +86,14 @@ void LocaleDataAccessorRegistry::init()
     LOCALE_SIMPLE_DEFAULT_ACCESSOR(Language,
                                    return QLocale::languageToString(locale.language());)
 
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
     LOCALE_SIMPLE_DEFAULT_ACCESSOR(Country,
                                    return QLocale::countryToString(locale.country());)
+#else
+    LOCALE_SIMPLE_DEFAULT_ACCESSOR(Country,
+                                   return QLocale::territoryToString(locale.territory());)
+#endif
 
     LOCALE_SIMPLE_ACCESSOR(Script,
                            return QLocale::scriptToString(locale.script());)
@@ -101,7 +107,7 @@ void LocaleDataAccessorRegistry::init()
 
     LOCALE_SIMPLE_ACCESSOR(TextDirection,
                            return locale.textDirection() == Qt::LeftToRight ? QStringLiteral(
-                                      "LTR")
+                                                                                  "LTR")
                                                                             : QStringLiteral("RTL");)
 
     LOCALE_SIMPLE_DEFAULT_ACCESSOR(TimeFormatLong,
@@ -167,8 +173,7 @@ void LocaleDataAccessorRegistry::init()
         const auto wds = locale.weekdays();
         QStringList resultList;
         resultList.reserve(wds.size());
-        for (Qt::DayOfWeek dayNumber
-             : wds) {
+        for (Qt::DayOfWeek dayNumber : wds) {
             resultList << QLocale().dayName(dayNumber);
         } return QLocale()
             .createSeparatedList(resultList);)
@@ -200,9 +205,13 @@ void LocaleDataAccessorRegistry::init()
     LOCALE_SIMPLE_ACCESSOR(BCP47,
                            return locale.bcp47Name();)
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
     LOCALE_SIMPLE_ACCESSOR(NativeCountry,
                            return locale.nativeCountryName();)
-
+#else
+    LOCALE_SIMPLE_ACCESSOR(NativeCountry,
+                           return locale.nativeTerritoryName();)
+#endif
     LOCALE_SIMPLE_ACCESSOR(NativeLanguage,
                            return locale.nativeLanguageName();)
 
@@ -213,7 +222,7 @@ void LocaleDataAccessorRegistry::init()
                                    return locale.measurementSystem()
                                            == QLocale::ImperialSystem
                                        ? QStringLiteral(
-                                           "Imperial")
+                                             "Imperial")
                                        : QStringLiteral("Metric");)
 
     LOCALE_SIMPLE_DEFAULT_ACCESSOR(FloatFormat,

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -40,9 +40,7 @@ public:
 
     void scanMetaTypes();
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     static bool isTypeIdRegistered(int typeId);
-#endif
 
     QVariant data(const QMetaObject *metaObject, MetaObjectData type) const;
     bool isValid(const QMetaObject *metaObject) const;

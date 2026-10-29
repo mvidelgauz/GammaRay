@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -40,11 +40,7 @@ public:
 
     QString name() const;
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     using TouchPointStates = QEventPoint::States;
-#else
-    using TouchPointStates = Qt::TouchPointStates;
-#endif
 
 public slots:
     virtual void requestElementsAt(const QPoint &pos, GammaRay::RemoteViewInterface::RequestMode mode) = 0;
@@ -60,8 +56,7 @@ public slots:
     virtual void sendWheelEvent(const QPoint &localPos, QPoint pixelDelta, QPoint angleDelta,
                                 int buttons, int modifiers) = 0;
 
-    virtual void sendTouchEvent(int type, int touchDeviceType, int deviceCaps, int touchDeviceMaxTouchPoints, int modifiers,
-                                int touchPointStates,
+    virtual void sendTouchEvent(const QString &deviceName, int deviceSystemId, int type, int touchDeviceType, int deviceCaps, int touchDeviceMaxTouchPoints, int modifiers,
                                 const QList<QTouchEvent::TouchPoint> &touchPoints) = 0;
 
     virtual void sendUserViewport(const QRectF &userViewport) = 0;
@@ -75,11 +70,7 @@ public slots:
 
 signals:
     void reset();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     void elementsAtReceived(const QList<GammaRay::ObjectId> &ids, int bestCandidate);
-#else
-    void elementsAtReceived(const GammaRay::ObjectIds &ids, int bestCandidate);
-#endif
     void frameUpdated(const GammaRay::RemoteViewFrame &frame);
 
 private:
@@ -93,24 +84,18 @@ Q_DECLARE_METATYPE(GammaRay::RemoteViewInterface::TouchPointStates)
 Q_DECLARE_METATYPE(QList<QTouchEvent::TouchPoint>)
 Q_DECLARE_METATYPE(GammaRay::RemoteViewInterface::RequestMode)
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 Q_DECLARE_METATYPE(QPointingDevice::PointerType)
 Q_DECLARE_METATYPE(QPointingDeviceUniqueId)
-#else
-Q_DECLARE_METATYPE(QTouchEvent::TouchPoint::InfoFlags)
-#endif
 
 QT_BEGIN_NAMESPACE
 Q_DECLARE_INTERFACE(GammaRay::RemoteViewInterface, "com.kdab.GammaRay.RemoteViewInterface/1.0")
 QT_END_NAMESPACE
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 GAMMARAY_COMMON_EXPORT QDataStream &operator<<(QDataStream &s, const QList<QTouchEvent::TouchPoint> &points);
 GAMMARAY_COMMON_EXPORT QDataStream &operator>>(QDataStream &s, QList<QTouchEvent::TouchPoint> &points);
 GAMMARAY_COMMON_EXPORT QDataStream &operator>>(QDataStream &s, GammaRay::RemoteViewInterface::TouchPointStates &states);
 GAMMARAY_COMMON_EXPORT QDataStream &operator<<(QDataStream &s, GammaRay::RemoteViewInterface::TouchPointStates states);
 GAMMARAY_COMMON_EXPORT QDataStream &operator<<(QDataStream &s, QPointingDeviceUniqueId id);
 GAMMARAY_COMMON_EXPORT QDataStream &operator>>(QDataStream &s, QPointingDeviceUniqueId &id);
-#endif
 
 #endif // GAMMARAY_REMOTEVIEWINTERFACE_H

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -19,8 +19,7 @@
 #include <common/objectbroker.h>
 #include <common/objectid.h>
 
-#include <3rdparty/qt/modeltest.h>
-
+#include <QAbstractItemModelTester>
 #include <QSignalSpy>
 #include <QTimer>
 
@@ -64,7 +63,7 @@ private slots:
 
         auto *model = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.TimerModel"));
         QVERIFY(model);
-        ModelTest modelTest(model);
+        QAbstractItemModelTester modelTest(model);
         auto baseRowCount = model->rowCount();
         QVERIFY(baseRowCount >= 0);
         QVERIFY(!searchFixedIndex(model, "timer1").isValid());
@@ -74,7 +73,7 @@ private slots:
         QTest::qWait(1);
 
         QCOMPARE(model->rowCount(), baseRowCount + 1);
-        auto idx = searchFixedIndex(model, "timer1");
+        auto idx = searchFixedIndex(model, "QTimer (timer1)");
         QVERIFY(idx.isValid());
         QCOMPARE(idx.data(ObjectModel::ObjectIdRole).value<ObjectId>(), ObjectId(t1));
 
@@ -89,7 +88,7 @@ private slots:
 
         auto *model = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.TimerModel"));
         QVERIFY(model);
-        ModelTest modelTest(model);
+        QAbstractItemModelTester modelTest(model);
 
         auto t1 = new QTimer;
         t1->setObjectName("timer1");
@@ -97,7 +96,7 @@ private slots:
         t1->setSingleShot(true);
         QTest::qWait(1);
 
-        auto idx = searchFixedIndex(model, "timer1");
+        auto idx = searchFixedIndex(model, "QTimer (timer1)");
         QVERIFY(idx.isValid());
         // TODO verify data
 
@@ -119,7 +118,7 @@ private slots:
 
         auto *model = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.TimerModel"));
         QVERIFY(model);
-        auto idx = searchFixedIndex(model, "testObject");
+        auto idx = searchFixedIndex(model, "TimerTopTest (testObject)");
         QVERIFY(!idx.isValid());
         const auto prevRowCount = model->rowCount();
 
@@ -130,7 +129,7 @@ private slots:
         // Wait for the free timer discovery
         QTRY_VERIFY_WITH_TIMEOUT(model->rowCount() != prevRowCount, 6000);
 
-        idx = searchFixedIndex(model, "testObject");
+        idx = searchFixedIndex(model, "TimerTopTest (testObject)");
         QVERIFY(idx.isValid());
         QCOMPARE(idx.data(ObjectModel::ObjectIdRole).value<ObjectId>(), ObjectId(this));
         idx = idx.sibling(idx.row(), 6);
@@ -189,16 +188,16 @@ private slots:
             QModelIndex idx;
             QVERIFY(model->rowCount() >= 4);
 
-            idx = searchFixedIndex(model, "mainThread");
+            idx = searchFixedIndex(model, "QThread (mainThread)");
             QVERIFY(idx.isValid());
             QCOMPARE(idx.data(ObjectModel::ObjectIdRole).value<ObjectId>(), ObjectId(mainThread.data()));
 
-            idx = searchFixedIndex(model, "mainTimer");
+            idx = searchFixedIndex(model, "QTimer (mainTimer)");
             QVERIFY(idx.isValid());
             QCOMPARE(idx.data(ObjectModel::ObjectIdRole).value<ObjectId>(), ObjectId(mainTimer.data()));
 
-            const auto idxs = searchFixedIndexes(model, "threadTimer");
-            QCOMPARE(idxs.count(), 2);
+            const auto idxs = searchFixedIndexes(model, "QTimer (threadTimer)");
+            QCOMPARE(idxs.size(), 2);
             for (const QModelIndex &idx : idxs) {
                 QVERIFY(idx.isValid());
             }

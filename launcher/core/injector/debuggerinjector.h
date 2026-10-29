@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -66,6 +66,8 @@ protected:
      *  This will terminate the debugger.
      */
     void setManualError(const QString &msg);
+    /** Like setManualError(), but lets the debugger finish its commands, e.g. to detach again. */
+    void setManualErrorAndContinue(const QString &msg);
 
     /** stderr lines for debugger-specific parsing */
     virtual void parseStandardError(const QByteArray &line) = 0;

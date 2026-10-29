@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -24,6 +24,8 @@
 #include <QAbstractProxyModel>
 #include <QCoreApplication>
 #include <QVector>
+
+#include <utility>
 
 namespace GammaRay {
 struct ObjectlBrokerData
@@ -127,12 +129,33 @@ void ObjectBroker::setModelFactoryCallback(ObjectBroker::ModelFactoryCallback ca
     s_objectBroker()->modelCallback = callback;
 }
 
+// the entry goes away with the model or the selection model, a new model at the same address
+// would get the old selection model otherwise
+static void forgetSelectionModel(QAbstractItemModel *model, QItemSelectionModel *selectionModel)
+{
+    if (s_objectBroker.isDestroyed())
+        return;
+    auto ob = s_objectBroker();
+    if (ob->selectionModels.value(model) == selectionModel)
+        ob->selectionModels.remove(model);
+    ob->ownedObjects.removeOne(selectionModel);
+}
+
 void ObjectBroker::registerSelectionModel(QItemSelectionModel *selectionModel)
 {
-    Q_ASSERT(!s_objectBroker()->selectionModels.contains(const_cast<QAbstractItemModel *>(
-        selectionModel->model())));
-    s_objectBroker()->selectionModels.insert(
-        const_cast<QAbstractItemModel *>(selectionModel->model()), selectionModel);
+    auto model = const_cast<QAbstractItemModel *>(selectionModel->model());
+    Q_ASSERT(!s_objectBroker()->selectionModels.contains(model));
+    s_objectBroker()->selectionModels.insert(model, selectionModel);
+
+    QObject::connect(model, &QObject::destroyed, selectionModel, [model, selectionModel]() {
+        const bool owned = !s_objectBroker.isDestroyed() && s_objectBroker()->ownedObjects.contains(selectionModel);
+        forgetSelectionModel(model, selectionModel);
+        if (owned)
+            delete selectionModel;
+    });
+    QObject::connect(selectionModel, &QObject::destroyed, [model, selectionModel]() {
+        forgetSelectionModel(model, selectionModel);
+    });
 }
 
 void ObjectBroker::unregisterSelectionModel(QItemSelectionModel *selectionModel)
@@ -196,8 +219,9 @@ void ObjectBroker::setSelectionModelFactoryCallback(
 void ObjectBroker::clear()
 {
     auto *ob = s_objectBroker();
-    qDeleteAll(ob->ownedObjects);
-    ob->ownedObjects.clear();
+    // deleted selection models remove themselves from the list
+    const auto owned = std::exchange(ob->ownedObjects, {});
+    qDeleteAll(owned);
     ob->objects.clear();
     ob->models.clear();
     ob->selectionModels.clear();

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Stephen Kelly <stephen.kelly@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -42,7 +42,7 @@ QVariant MetaTypesModel::data(const QModelIndex &index, int role) const
     if (role == Qt::DisplayRole) {
         switch (index.column()) {
         case 0: {
-            QString name(QMetaType::typeName(metaTypeId));
+            QString name(QMetaType(metaTypeId).name());
             if (name.isEmpty())
                 return tr("N/A");
             return name;
@@ -50,28 +50,21 @@ QVariant MetaTypesModel::data(const QModelIndex &index, int role) const
         case 1:
             return metaTypeId;
         case 2:
-            return QMetaType::sizeOf(metaTypeId);
+            return QMetaType(metaTypeId).sizeOf();
         case 3:
-            return Util::addressToString(QMetaType::metaObjectForType(metaTypeId));
+            return Util::addressToString(QMetaType(metaTypeId).metaObject());
         case 4: {
-            const QMetaType::TypeFlags flags = QMetaType::typeFlags(metaTypeId);
+            const QMetaType::TypeFlags flags = QMetaType(metaTypeId).flags();
             QStringList l;
 #define F(x)                  \
     if (flags & QMetaType::x) \
     l.push_back(QStringLiteral(#x))
             F(NeedsConstruction);
             F(NeedsDestruction);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             F(RelocatableType);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 2, 0)
             F(IsConst);
-#endif
             F(IsQmlList);
             F(IsUnsignedEnumeration);
-#else
-            F(MovableType);
-            F(WasDeclaredAsMetaType);
-#endif
             F(PointerToQObject);
             F(IsEnumeration);
             F(SharedPointerToQObject);
@@ -83,18 +76,14 @@ QVariant MetaTypesModel::data(const QModelIndex &index, int role) const
             return l.join(QStringLiteral(", "));
         }
         case 5: {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             auto mt = QMetaType(metaTypeId);
             return mt.isEqualityComparable() && mt.isOrdered();
-#else
-            return QMetaType::hasRegisteredComparators(metaTypeId);
-#endif
         }
         case 6:
-            return QMetaType::hasRegisteredDebugStreamOperator(metaTypeId);
+            return QMetaType(metaTypeId).hasRegisteredDebugStreamOperator();
         }
     } else if (role == MetaTypeRoles::MetaObjectIdRole && index.column() == 0) {
-        if (auto mo = QMetaType::metaObjectForType(metaTypeId))
+        if (auto mo = QMetaType(metaTypeId).metaObject())
             return QVariant::fromValue(ObjectId(const_cast<QMetaObject *>(mo), "const QMetaObject*"));
     }
 
@@ -121,28 +110,18 @@ void MetaTypesModel::scanMetaTypes()
 {
     QVector<int> metaTypes;
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     for (int mtId = 0; mtId <= QMetaType::User; ++mtId) {
         if (!MetaObjectRegistry::isTypeIdRegistered(mtId))
             continue;
-        const auto name = QMetaType::typeName(mtId);
+        const auto name = QMetaType(mtId).name();
         if (strstr(name, "GammaRay::") != name)
             metaTypes.push_back(mtId);
     }
     for (int mtId = QMetaType::User + 1; QMetaType::isRegistered(mtId); ++mtId) {
-        const auto name = QMetaType::typeName(mtId);
+        const auto name = QMetaType(mtId).name();
         if (strstr(name, "GammaRay::") != name)
             metaTypes.push_back(mtId);
     }
-#else
-    for (int mtId = 0; mtId <= QMetaType::User || QMetaType::isRegistered(mtId); ++mtId) {
-        if (!QMetaType::isRegistered(mtId))
-            continue;
-        const auto name = QMetaType::typeName(mtId);
-        if (strstr(name, "GammaRay::") != name)
-            metaTypes.push_back(mtId);
-    }
-#endif
 
     auto itOld = m_metaTypes.constBegin();
     auto itNew = metaTypes.constBegin();

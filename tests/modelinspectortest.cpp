@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -22,8 +22,7 @@
 #include <common/objectmodel.h>
 #include <common/objectid.h>
 
-#include <3rdparty/qt/modeltest.h>
-
+#include <QAbstractItemModelTester>
 #include <QAbstractItemView>
 #include <QItemSelectionModel>
 #include <QSignalSpy>
@@ -48,7 +47,7 @@ private slots:
 
         auto modelModel = ObjectBroker::model("com.kdab.GammaRay.ModelModel");
         QVERIFY(modelModel);
-        ModelTest modelModelTester(modelModel);
+        QAbstractItemModelTester modelModelTester(modelModel);
         QVERIFY(modelModel->rowCount() >= 1); // can contain the QEmptyModel instance too
         int topRowCount = modelModel->rowCount();
 
@@ -152,7 +151,7 @@ private slots:
 
         auto selectionModels = ObjectBroker::model("com.kdab.GammaRay.SelectionModels");
         QVERIFY(selectionModels);
-        ModelTest selModelTester(selectionModels);
+        QAbstractItemModelTester selModelTester(selectionModels);
         QCOMPARE(selectionModels->rowCount(), 0);
         QSignalSpy resetSpy(selectionModels, &QAbstractItemModel::modelReset);
         QVERIFY(resetSpy.isValid());
@@ -206,12 +205,12 @@ private slots:
 
         auto contentModel = ObjectBroker::model("com.kdab.GammaRay.ModelContent");
         QVERIFY(contentModel);
-        ModelTest contentModelTester(contentModel);
+        QAbstractItemModelTester contentModelTester(contentModel);
         QCOMPARE(contentModel->rowCount(), 0);
 
         auto cellModel = ObjectBroker::model("com.kdab.GammaRay.ModelCellModel");
         QVERIFY(cellModel);
-        ModelTest cellModelTester(cellModel);
+        QAbstractItemModelTester cellModelTester(cellModel);
         QCOMPARE(cellModel->rowCount(), 0);
         QSignalSpy cellContentResetSpy(cellModel, &QAbstractItemModel::modelReset);
         QVERIFY(cellContentResetSpy.isValid());
@@ -220,12 +219,15 @@ private slots:
         QVERIFY(targetModelIdx.isValid());
         auto modelSelModel = ObjectBroker::selectionModel(modelModel);
         QVERIFY(modelSelModel);
-        modelSelModel->select(targetModelIdx, QItemSelectionModel::ClearAndSelect);
         QCOMPARE(contentModel->rowCount(), 0);
 
         auto item = new QStandardItem("item0,0");
         item->setFlags(Qt::NoItemFlags); // should nevertheless be selectable for inspection
         targetModel->appendRow(item);
+
+        // TODO remove this when the above select does not assert in QAbstractItemModelTester
+        modelSelModel->select(targetModelIdx, QItemSelectionModel::ClearAndSelect);
+
         QCOMPARE(contentModel->rowCount(), 1);
         QCOMPARE(contentModel->columnCount(), 1);
         auto idx = contentModel->index(0, 0);

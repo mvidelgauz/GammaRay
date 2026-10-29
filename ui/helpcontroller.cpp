@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -79,7 +79,7 @@ Q_GLOBAL_STATIC(HelpControllerPrivate, s_helpController)
 
 static QString assistantExecutableName()
 {
-#ifdef Q_OS_OSX
+#ifdef Q_OS_MACOS
     return QStringLiteral("Assistant.app");
 #else
     return QStringLiteral("assistant");
@@ -92,7 +92,7 @@ bool HelpController::isAvailable()
     if (!d->assistantPath.isEmpty() && !d->qhcPath.isEmpty())
         return true;
 
-    d->assistantPath = QLibraryInfo::location(QLibraryInfo::BinariesPath) + QDir::separator() + assistantExecutableName();
+    d->assistantPath = QLibraryInfo::path(QLibraryInfo::BinariesPath) + QDir::separator() + assistantExecutableName();
     QFileInfo assistFile(d->assistantPath);
     if (!assistFile.isExecutable()) {
         qDebug() << "Qt Assistant not found in QT_INSTALL_BINS. Looking in standard Path next.";

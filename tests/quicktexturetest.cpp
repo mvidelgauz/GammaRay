@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -41,8 +41,8 @@ private slots:
         QCOMPARE(imageItem->metaObject()->className(), "QQuickImage");
         Probe::instance()->selectObject(imageItem, QPoint());
 
-        QVERIFY(frameSpy.wait() || frameSpy.count() >= 1);
-        const auto last = frameSpy.count() - 1;
+        QVERIFY(frameSpy.wait() || frameSpy.size() >= 1);
+        const auto last = frameSpy.size() - 1;
         const auto frame = frameSpy.at(last).at(0).value<RemoteViewFrame>();
         QCOMPARE(frame.viewRect(), QRectF(0, 0, 360, 360));
         QCOMPARE(frame.image().pixel(358, 0), QColor(Qt::red).rgb());
@@ -69,8 +69,8 @@ private slots:
         QVERIFY(textItem);
         Probe::instance()->selectObject(textItem, QPoint());
 
-        QVERIFY(frameSpy.wait() || frameSpy.count() >= 1);
-        const auto last = frameSpy.count() - 1;
+        QVERIFY(frameSpy.wait() || frameSpy.size() >= 1);
+        const auto last = frameSpy.size() - 1;
         const auto frame = frameSpy.at(last).at(0).value<RemoteViewFrame>();
         QVERIFY(frame.viewRect().height() > 0);
         QVERIFY(frame.viewRect().width() > 0);
@@ -78,11 +78,7 @@ private slots:
 
     void testShaderEffectSourceGrab()
     {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         if (!showSource("qrc:/manual/shadereffect6.qml")) {
-#else
-        if (!showSource("qrc:/manual/shadereffect.qml")) {
-#endif
             qWarning() << "Skipping test due to unavailable QtQuick display.";
             return;
         }
@@ -101,8 +97,8 @@ private slots:
         QVERIFY(source);
         Probe::instance()->selectObject(source, QPoint());
 
-        QVERIFY(frameSpy.wait() || frameSpy.count() >= 1);
-        const auto last = frameSpy.count() - 1;
+        QVERIFY(frameSpy.wait() || frameSpy.size() >= 1);
+        const auto last = frameSpy.size() - 1;
         const auto frame = frameSpy.at(last).at(0).value<RemoteViewFrame>();
         QVERIFY(frame.viewRect().height() > 0);
         QVERIFY(frame.viewRect().width() > 0);

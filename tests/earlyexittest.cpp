@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Giulio Camuffo <giulio.camuffo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -86,7 +86,7 @@ private slots:
         QVERIFY(launcher.start());
 
         spy.wait(10000);
-        QCOMPARE(spy.count(), 1);
+        QCOMPARE(spy.size(), 1);
         QEXPECT_FAIL("", "Debug injectors miss error detection for this case.", Continue);
         QVERIFY(!launcher.errorMessage().isEmpty());
     }
@@ -108,7 +108,7 @@ private slots:
 
         spy.wait(10000);
 
-        QCOMPARE(spy.count(), 1);
+        QCOMPARE(spy.size(), 1);
     }
 
     void testStop_data()
@@ -140,7 +140,7 @@ private slots:
         QVERIFY(launcher.start());
         launcher.stop();
         spy.wait(1000);
-        QCOMPARE(spy.count(), 1);
+        QCOMPARE(spy.size(), 1);
     }
 };
 

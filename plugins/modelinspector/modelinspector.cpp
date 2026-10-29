@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -20,10 +20,10 @@
 
 #include <core/remote/serverproxymodel.h>
 #include <common/objectbroker.h>
-#include <common/recursiveproxymodelbase.h>
 
 #include <QDebug>
 #include <QItemSelectionModel>
+#include <QSortFilterProxyModel>
 
 using namespace GammaRay;
 
@@ -40,7 +40,7 @@ ModelInspector::ModelInspector(Probe *probe, QObject *parent)
     connect(probe, &Probe::objectCreated, modelModelSource, &ModelModel::objectAdded);
     connect(probe, &Probe::objectDestroyed, modelModelSource, &ModelModel::objectRemoved);
 
-    auto modelModelProxy = new ServerProxyModel<RecursiveProxyModelBase>(this);
+    auto modelModelProxy = new ServerProxyModel<QSortFilterProxyModel>(this);
     modelModelProxy->setSourceModel(modelModelSource);
     m_modelModel = modelModelProxy;
     probe->registerModel(QStringLiteral("com.kdab.GammaRay.ModelModel"), m_modelModel);
@@ -105,7 +105,7 @@ void ModelInspector::objectSelected(QObject *object)
         if (indexList.isEmpty())
             return;
 
-        const auto index = indexList.first();
+        const auto &index = indexList.first();
         m_modelSelectionModel->select(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     }
     if (auto selModel = qobject_cast<QItemSelectionModel *>(object)) {
@@ -120,7 +120,7 @@ void ModelInspector::objectSelected(QObject *object)
         if (indexList.isEmpty())
             return;
 
-        const auto index = indexList.first();
+        const auto &index = indexList.first();
         m_selectionModelsSelectionModel->select(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     }
 }

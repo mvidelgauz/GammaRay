@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -19,6 +19,7 @@
 #include <QObject>
 
 QT_BEGIN_NAMESPACE
+class QAbstractProxyModel;
 class QItemSelection;
 class QItemSelectionModel;
 class QModelIndex;
@@ -45,6 +46,7 @@ private:
     static void scanForThreadAffinityIssues();
 
     PropertyController *m_propertyController;
+    QAbstractProxyModel *m_proxy;
     QItemSelectionModel *m_selectionModel;
 };
 

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -27,11 +27,7 @@ bool UiExtractor::checkProperty(QObject *obj, const QString &prop) const
     const QMetaProperty mp = mo->property(mo->indexOfProperty(prop.toLatin1()));
 
     // TODO come up with some more aggressive filtering
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    if (mp.isValid() && mp.isDesignable(obj) && mp.isStored(obj) && mp.isWritable()) {
-#else
     if (mp.isValid() && mp.isDesignable() && mp.isStored() && mp.isWritable()) {
-#endif
         const QVariant value = mp.read(obj);
 
         // try to figure out the default by resetting to it
@@ -47,9 +43,9 @@ bool UiExtractor::checkProperty(QObject *obj, const QString &prop) const
         if (value.isNull() || !value.isValid())
             return false;
 
-        if (value.type() == QVariant::String)
+        if (value.typeId() == QMetaType::QString)
             return !value.toString().isEmpty();
-        else if (value.type() == QVariant::Locale)
+        else if (value.typeId() == QMetaType::QLocale)
             return value.toLocale() != QLocale::system();
 
         return true;

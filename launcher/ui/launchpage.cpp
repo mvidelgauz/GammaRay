@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -84,7 +84,7 @@ void LaunchPage::writeSettings()
 QStringList LaunchPage::notEmptyString(const QStringList &list)
 {
     QStringList notEmptyStringList;
-    const int numberOfArguments = list.count();
+    const int numberOfArguments = list.size();
     for (int i = 0; i < numberOfArguments; ++i) {
         if (!list.at(i).trimmed().isEmpty())
             notEmptyStringList << list.at(i);
@@ -206,15 +206,19 @@ void LaunchPage::updateArgumentButtons()
 
 void LaunchPage::detectABI(const QString &path)
 {
-    const ProbeABI abi = m_abiDetector.abiForExecutable(path);
+    QString detectionError;
+    const ProbeABI abi = m_abiDetector.abiForExecutable(path, &detectionError);
     const int index = m_abiModel->indexOfBestMatchingABI(abi);
     if (index >= 0) {
         ui->probeBox->setCurrentIndex(index);
     } else {
         if (!fileIsExecutable()) {
             ui->errorLabel->setText(tr("The given file path is not a valid executable"));
+        } else if (!abi.isValid()) {
+            ui->errorLabel->setText(tr("Could not detect the Qt ABI of this binary: %1").arg(detectionError));
         } else {
-            ui->errorLabel->setText(tr("None of the available ABI probes supports the ABI of this binary [%1]").arg(abi.displayString()));
+            ui->errorLabel->setText(tr("None of the available probes supports the ABI of this binary [%1]: %2")
+                                        .arg(abi.displayString(), ProbeFinder::mismatchReason(abi, m_abiModel->abis())));
         }
     }
     m_abiIsValid = index >= 0;

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -21,24 +21,20 @@
 #include <QEvent>
 #include <QPainter>
 #include <QQuickWindow>
+#include <QQuickRenderControl>
 
 #ifndef QT_NO_OPENGL
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QOpenGLPaintDevice>
+#include <QQuickOpenGLUtils>
 #endif
 
 #include <private/qquickanchors_p.h>
 #include <private/qquickitem_p.h>
 #include <private/qquickwindow_p.h>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
 #include <private/qsgsoftwarerenderer_p.h>
-#endif
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#include <QQuickOpenGLUtils>
-#endif
 
 #include <algorithm>
 #include <functional>
@@ -88,13 +84,13 @@ private:
     }
 };
 
-// We need random colors, but we also want the item
-// to keep its random color during scene changes to avoid
-// flickering due to color change.
-static QHash<QQuickItem *, QColor> s_itemsColor;
-
 static QColor colorForItem(QQuickItem *item)
 {
+    // We need random colors, but we also want the item
+    // to keep its random color during scene changes to avoid
+    // flickering due to color change.
+    static QHash<QQuickItem *, QColor> s_itemsColor;
+
     QColor color = s_itemsColor.value(item, QColor());
 
     if (!color.isValid()) {
@@ -231,19 +227,10 @@ std::unique_ptr<AbstractScreenGrabber> AbstractScreenGrabber::get(QQuickWindow *
     case RenderInfo::OpenGL:
         return std::unique_ptr<AbstractScreenGrabber>(new OpenGLScreenGrabber(window));
 #endif
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     case RenderInfo::Software:
         return std::unique_ptr<AbstractScreenGrabber>(new SoftwareScreenGrabber(window));
-#endif
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    case RenderInfo::Vulkan:
-    case RenderInfo::Direct3D11:
-    case RenderInfo::OpenVG:
-    case RenderInfo::Metal:
-        return std::unique_ptr<AbstractScreenGrabber>(new UnsupportedScreenGrabber(window));
-#endif
     default:
-        return nullptr;
+        return std::unique_ptr<AbstractScreenGrabber>(new UnsupportedScreenGrabber(window));
     }
 }
 
@@ -253,11 +240,7 @@ AbstractScreenGrabber::RenderInfo::GraphicsApi AbstractScreenGrabber::graphicsAp
         return RenderInfo::Unknown;
     }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     return static_cast<RenderInfo::GraphicsApi>(window->rendererInterface()->graphicsApi());
-#else
-    return RenderInfo::OpenGL;
-#endif
 }
 
 AbstractScreenGrabber::AbstractScreenGrabber(QQuickWindow *window)
@@ -267,9 +250,17 @@ AbstractScreenGrabber::AbstractScreenGrabber(QQuickWindow *window)
     qRegisterMetaType<GrabbedFrame>();
 
     placeOn(ItemOrLayoutFacade());
+
+    // Install an event filter to pick up on expose events
+    if (m_window)
+        m_window->installEventFilter(this);
 }
 
-GammaRay::AbstractScreenGrabber::~AbstractScreenGrabber() = default;
+GammaRay::AbstractScreenGrabber::~AbstractScreenGrabber()
+{
+    if (m_window)
+        m_window->removeEventFilter(this);
+}
 
 QQuickWindow *AbstractScreenGrabber::window() const
 {
@@ -434,6 +425,19 @@ QuickItemGeometry AbstractScreenGrabber::initFromItem(QQuickItem *item)
     return itemGeometry;
 }
 
+bool AbstractScreenGrabber::eventFilter(QObject *object, QEvent *event)
+{
+    if (event->type() == QEvent::Type::Expose) {
+        // If the window is no longer rendering, clear the image so the unavailable text is shown again.
+        // Otherwise, the viewport is frozen on the last grabbed frame - and it never actually updates when the user interacts with it.
+        if (!m_window->isExposed()) {
+            m_grabbedFrame.image = QImage();
+            emit sceneGrabbed(m_grabbedFrame);
+        }
+    }
+    return QObject::eventFilter(object, event);
+}
+
 void AbstractScreenGrabber::gatherRenderInfo()
 {
     // We are in the rendering thread at this point
@@ -443,11 +447,7 @@ void AbstractScreenGrabber::gatherRenderInfo()
     m_renderInfo.dpr = m_window->effectiveDevicePixelRatio();
     m_renderInfo.windowSize = m_window->size();
     m_renderInfo.windowPosition = m_window->position();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     m_renderInfo.graphicsApi = static_cast<RenderInfo::GraphicsApi>(m_window->rendererInterface()->graphicsApi());
-#else
-    m_renderInfo.graphicsApi = RenderInfo::OpenGL;
-#endif
 
     m_grabbedFrame.itemsGeometry.clear();
     m_grabbedFrame.itemsGeometryRect = QRectF();
@@ -620,11 +620,7 @@ void OpenGLScreenGrabber::windowAfterRendering()
 
     // We are in the rendering thread at this point
     // And the gui thread is NOT locked
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     Q_ASSERT(QOpenGLContext::currentContext() == m_window->rendererInterface()->getResource(m_window, QSGRendererInterface::OpenGLContextResource));
-#else
-    Q_ASSERT(QOpenGLContext::currentContext() == m_window->openglContext());
-#endif
 
     if (m_isGrabbing) {
         const auto window = QRectF(QPoint(0, 0), m_renderInfo.windowSize);
@@ -637,17 +633,36 @@ void OpenGLScreenGrabber::windowAfterRendering()
         int yOff = 0;
         int xOff = 0;
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
         // With Qt 6.4 all the content of the window (widgets + quick) is on the same surface, we need
         // to find the right x,y offsets to extract and show just our quick widget
         const bool isQQuickWidget = qstrcmp(m_window->metaObject()->className(), "QQuickWidgetOffscreenWindow") == 0;
         if (isQQuickWidget) {
+#if QT_VERSION <= QT_VERSION_CHECK(6, 6, 0)
             xOff = m_renderInfo.windowPosition.x();
             const auto windowBottom = (m_renderInfo.windowPosition.y() + m_renderInfo.windowSize.height());
             const auto viewportHeight = viewport[3];
             yOff = viewportHeight - windowBottom;
-        }
+#else
+            const auto rc = QQuickWindowPrivate::get(m_window)->renderControl;
+            QPoint offset;
+            rc->renderWindow(&offset);
+
+            // If we are rendering into a window, we need to take into account the space between us and the bottom of the window (if any)
+            const auto renderWindow = rc->renderWindowFor(m_window);
+            if (renderWindow != nullptr) {
+                yOff = renderWindow->height() - m_renderInfo.windowSize.height() - offset.y();
+            }
+            xOff = offset.x();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+            yOff = static_cast<int>(std::floor(yOff * m_renderInfo.dpr));
+            xOff = static_cast<int>(std::floor(xOff * m_renderInfo.dpr));
+#else
+            const auto viewportHeight = viewport[3];
+            const auto windowBottom = m_renderInfo.windowSize.height();
+            yOff = viewportHeight - windowBottom - offset.y();
 #endif
+#endif
+        }
 
         // readout parameters
         // when in doubt, round x and y to floor--> reads one pixel more
@@ -684,11 +699,7 @@ void OpenGLScreenGrabber::windowAfterRendering()
 
     drawDecorations();
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QQuickOpenGLUtils::resetOpenGLState();
-#else
-    m_window->resetOpenGLState();
-#endif
 
     if (m_isGrabbing) {
         locker.unlock();
@@ -709,7 +720,6 @@ void OpenGLScreenGrabber::drawDecorations()
 }
 #endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
 SoftwareScreenGrabber::SoftwareScreenGrabber(QQuickWindow *window)
     : AbstractScreenGrabber(window)
 {
@@ -727,11 +737,9 @@ void SoftwareScreenGrabber::updateOverlay()
         if (!m_currentItem.isNull())
             Q_ASSERT(m_currentItem.item()->window() == m_window);
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 3)
         auto renderer = softwareRenderer();
         if (renderer)
             renderer->markDirty();
-#endif
 
         m_window->update();
     }
@@ -746,7 +754,6 @@ void SoftwareScreenGrabber::requestGrabWindow(const QRectF &userViewport)
     // See QTBUG-53795
     dpr = m_window->effectiveDevicePixelRatio();
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 3)
     m_grabbedFrame.image = QImage(m_window->size() * dpr, QImage::Format_ARGB32_Premultiplied);
     m_grabbedFrame.image.setDevicePixelRatio(dpr);
     m_grabbedFrame.image.fill(Qt::white);
@@ -761,16 +768,8 @@ void SoftwareScreenGrabber::requestGrabWindow(const QRectF &userViewport)
     renderer->markDirty();
     winPriv->polishItems();
     winPriv->syncSceneGraph();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     winPriv->renderSceneGraph();
-#else
-    winPriv->renderSceneGraph(m_window->size());
-#endif
     renderer->setCurrentPaintDevice(regularRenderDevice);
-#else
-    m_grabbedFrame.image = m_window->grabWindow();
-    m_grabbedFrame.image.setDevicePixelRatio(dpr);
-#endif
 
     m_isGrabbing = false;
 
@@ -779,19 +778,16 @@ void SoftwareScreenGrabber::requestGrabWindow(const QRectF &userViewport)
 
 void SoftwareScreenGrabber::drawDecorations()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 3)
     auto renderer = softwareRenderer();
     if (!renderer || !renderer->currentPaintDevice())
         return;
     QPainter p(renderer->currentPaintDevice());
     p.setClipRegion(renderer->flushRegion());
     doDrawDecorations(p);
-#endif
 }
 
 void SoftwareScreenGrabber::windowBeforeRendering()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 3)
     QuickItemGeometry oldItemRect = m_grabbedFrame.itemsGeometry.size() ? m_grabbedFrame.itemsGeometry.front() : QuickItemGeometry(); // So far the vector never has more than one element...
     gatherRenderInfo();
     QuickItemGeometry newItemRect = m_grabbedFrame.itemsGeometry.size() ? m_grabbedFrame.itemsGeometry.front() : QuickItemGeometry();
@@ -800,19 +796,16 @@ void SoftwareScreenGrabber::windowBeforeRendering()
         // full window repaint though, for the overlay to be correct.
         softwareRenderer()->markDirty();
     }
-#endif
 }
 
 void SoftwareScreenGrabber::windowAfterRendering()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 3)
     if (!m_isGrabbing) {
         drawDecorations();
         emit sceneChanged();
     } else {
         m_isGrabbing = false;
     }
-#endif
 }
 
 QSGSoftwareRenderer *SoftwareScreenGrabber::softwareRenderer() const
@@ -823,28 +816,26 @@ QSGSoftwareRenderer *SoftwareScreenGrabber::softwareRenderer() const
     QSGSoftwareRenderer *softwareRenderer = dynamic_cast<QSGSoftwareRenderer *>(winPriv->renderer);
     return softwareRenderer;
 }
-#endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 UnsupportedScreenGrabber::UnsupportedScreenGrabber(QQuickWindow *window)
     : AbstractScreenGrabber(window)
 {
 }
 
-UnsupportedScreenGrabber::~UnsupportedScreenGrabber()
-{
-}
+UnsupportedScreenGrabber::~UnsupportedScreenGrabber() = default;
 
 void UnsupportedScreenGrabber::requestGrabWindow(const QRectF & /*userViewport*/)
 {
     m_grabbedFrame.image = m_window->grabWindow();
-    m_grabbedFrame.image.setDevicePixelRatio(m_window->effectiveDevicePixelRatio());
 
     int alpha = 120;
     if (m_grabbedFrame.image.isNull()) {
-        m_grabbedFrame.image = QImage(m_window->size(), QImage::Format_ARGB32);
+        m_grabbedFrame.image = QImage(m_window->size() * m_window->effectiveDevicePixelRatio(), QImage::Format_ARGB32);
+        m_grabbedFrame.image.fill(Qt::black);
         alpha = 200;
     }
+
+    m_grabbedFrame.image.setDevicePixelRatio(m_window->effectiveDevicePixelRatio());
 
     QPainter p(&m_grabbedFrame.image);
     p.setRenderHint(QPainter::TextAntialiasing);
@@ -856,7 +847,7 @@ void UnsupportedScreenGrabber::requestGrabWindow(const QRectF & /*userViewport*/
     font.setPointSize(font.pointSize() + 1);
     p.setFont(font);
     QString backend = VariantHandler::displayString(QVariant::fromValue(m_window->graphicsApi()));
-    QString txt = backend + QStringLiteral(" is not supported yet, please use OpenGL or Software backend");
+    QString txt = QLatin1String("%1 is not supported yet, please use the OpenGL (QSG_RHI_BACKEND=opengl) or Software backend (QT_QUICK_BACKEND=software)").arg(backend);
     p.drawText(QRect { QPoint(0, 0), m_window->size() }, Qt::AlignCenter | Qt::TextWordWrap, txt);
 
     emit sceneGrabbed(m_grabbedFrame);
@@ -864,10 +855,10 @@ void UnsupportedScreenGrabber::requestGrabWindow(const QRectF & /*userViewport*/
 
 void UnsupportedScreenGrabber::drawDecorations()
 {
+    // Intentionally dummied out because this grabber doesn't do anything useful
 }
 
 void UnsupportedScreenGrabber::updateOverlay()
 {
+    // Intentionally dummied out because this grabber doesn't do anything useful
 }
-
-#endif // QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)

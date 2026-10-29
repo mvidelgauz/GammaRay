@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -28,8 +28,11 @@ void MethodArgumentModel::setMethod(const QMetaMethod &method)
     m_arguments.resize(method.parameterTypes().size());
     for (int i = 0; i < m_arguments.size(); ++i) {
         const QByteArray typeName = method.parameterTypes().at(i);
-        const QVariant::Type variantType = QVariant::nameToType(typeName);
-        m_arguments[i] = QVariant(variantType);
+
+        // default-construct built-in types so they get the right editor, leave the rest invalid
+        const QMetaType metaType = QMetaType::fromName(typeName);
+        if (metaType.id() < QMetaType::User)
+            m_arguments[i] = QVariant(metaType);
     }
     endResetModel();
 }

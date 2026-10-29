@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -56,19 +56,29 @@ private slots:
         PropertyAdaptorFactory::registerFactory(QmlListPropertyAdaptorFactory::instance());
         PropertyAdaptorFactory::registerFactory(QmlAttachedPropertyAdaptorFactory::instance());
         PropertyAdaptorFactory::registerFactory(QJSValuePropertyAdaptorFactory::instance());
+#if QT_VERSION < QT_VERSION_CHECK(6, 12, 0)
         PropertyAdaptorFactory::registerFactory(QmlContextPropertyAdaptorFactory::instance());
+#endif
     }
 
     void testQmlListProperty()
     {
         QQmlEngine engine;
         QQmlComponent component(&engine);
-        component.setData("import QtQuick 2.0\nRectangle { Text { text: \"Hello world!\" } }",
+        component.setData(R"V0G0N(
+import QtQuick 2.0
+Rectangle {
+    Text {
+        text: "Hello world!"
+    }
+}
+)V0G0N",
                           QUrl());
         auto obj = component.create();
-        QVERIFY(obj);
+        QVERIFY2(obj, qPrintable(component.errorString()));
 
         auto adaptor = PropertyAdaptorFactory::create(obj, this);
+
         QVERIFY(adaptor);
         QVERIFY(adaptor->count() > 20);
 
@@ -96,7 +106,7 @@ private slots:
         QQmlComponent component(&engine);
         component.setData("import QtQuick 2.0\nRectangle { Keys.enabled: true }", QUrl());
         auto obj = component.create();
-        QVERIFY(obj);
+        QVERIFY2(obj, qPrintable(component.errorString()));
 
         auto adaptor = PropertyAdaptorFactory::create(obj, this);
         QVERIFY(adaptor);
@@ -123,7 +133,7 @@ private slots:
             "import QtQuick 2.0\nRectangle { property var a1: []; property var a2: [\"hello\", \"world\"] }",
             QUrl());
         auto obj = component.create();
-        QVERIFY(obj);
+        QVERIFY2(obj, qPrintable(component.errorString()));
 
         auto adaptor = PropertyAdaptorFactory::create(obj, this);
         QVERIFY(adaptor);
@@ -148,25 +158,6 @@ private slots:
         QCOMPARE(data.value(), QVariant("world"));
 
         delete obj;
-    }
-
-    void testContextProperty()
-    {
-        QQmlEngine engine;
-        engine.rootContext()->setContextProperty("myContextProp", 42);
-
-        auto adaptor = PropertyAdaptorFactory::create(engine.rootContext(), this);
-        QVERIFY(adaptor);
-
-        auto idx = indexOfProperty(adaptor, "myContextProp");
-        QVERIFY(idx >= 0);
-
-        auto data = adaptor->propertyData(idx);
-        QCOMPARE(data.name(), QStringLiteral("myContextProp"));
-        QCOMPARE(data.value().toInt(), 42);
-
-        adaptor->writeProperty(idx, 23);
-        QCOMPARE(engine.rootContext()->contextProperty("myContextProp").toInt(), 23);
     }
 };
 

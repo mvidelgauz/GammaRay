@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -38,7 +38,7 @@ bool LldbInjector::selfTest()
             const QString output = QString::fromLocal8Bit(process.readAll()).trimmed();
             const auto targetMajor = 3;
             const auto targetMinor = 6;
-            const QRegularExpression rx(QStringLiteral("\\b([\\d]+\\.[\\d]+\\.[\\d]+)\\b")); // lldb version 3.7.0 ( revision )
+            static const QRegularExpression rx(QStringLiteral("\\b([\\d]+\\.[\\d]+\\.[\\d]+)\\b")); // lldb version 3.7.0 ( revision )
             const auto match = rx.match(output);
 
             if (!match.hasMatch()) {
@@ -49,7 +49,7 @@ bool LldbInjector::selfTest()
             const auto version = match.captured(1);
             const QStringList parts = version.split(QLatin1Char('.'));
 
-            if (parts.count() >= 2) {
+            if (parts.size() >= 2) {
                 const auto major = parts.at(0).toInt();
                 const auto minor = parts.at(1).toInt();
                 if (major > targetMajor || (major == targetMajor && minor >= targetMinor))
@@ -136,4 +136,6 @@ void LldbInjector::parseStandardError(const QByteArray &line)
 {
     if (m_scriptSupportIsRequired && line.startsWith("error: your copy of LLDB does not support scripting"))
         setManualError(tr("LLDB does not support scripting. Install lldb python support please."));
+    else if (line.startsWith("error: attach failed"))
+        setManualError(tr("LLDB could not attach to the process.\n\nLLDB error was: %1").arg(QString::fromLocal8Bit(line)));
 }

@@ -1,4 +1,4 @@
-# <a name="title"></a> [![Logo](ui/resources/gammaray/ui/light/pixmaps/GammaRay-logo-small.png)](https://www.kdab.com/gammaray)
+# <a name="title"></a> [![Logo](ui/resources/gammaray/ui/light/pixmaps/gammaray-trademark@2x.png)](https://www.kdab.com/gammaray)
 
 GammaRay is a software introspection tool for Qt applications developed by KDAB.
 Leveraging the QObject introspection mechanism it allows you to observe and
@@ -58,20 +58,28 @@ Stay up-to-date with KDAB product announcements:
 
 If you want to contribute, please check out: <https://github.com/KDAB/GammaRay/wiki/Get-Involved>
 
-KDAB will happily accept external contributions, but substantial contributions require
-a signed [Copyright Assignment Agreement](docs/GammaRay-CopyrightAssignmentForm.pdf).
-
-Contact info@kdab.com for more information about the Copyright Assignment Agreement.
-
 Please submit your contributions or issue reports from our GitHub space at
 <https://github.com/KDAB/GammaRay>.
+
+KDAB will happily accept external contributions; however, **all** contributions
+require a signed KDAB Copyright Assignment Agreement.
+
+* Individual contributors (non-employees) are required to electronically agree
+  to the KDAB CLA using the GitHub cla-assistant hook.
+
+* Employees, representing their company, must email a completed and signed
+  [KDAB Copyright Assignment Agreement](https://github.com/KDAB/GammaRay/blob/master/docs/GammaRay-CopyrightAssignmentForm.pdf)
+  to info@kdab.com.
+
+This is needed so we can continue to dual-license GammaRay.
+Contact info@kdab.com for more information.
 
 Thanks to our [contributors](CONTRIBUTORS.txt).
 
 ## License
 
-The GammaRay Software is (C) 2010-2023 Klarälvdalens Datakonsult AB (KDAB),
-and is available under the terms of the GPL version 2 (or any later version,
+The GammaRay Software is © Klarälvdalens Datakonsult AB (KDAB), and is
+available under the terms of the GPL version 2 (or any later version,
 at your option).  See [GPL-2.0-or-later.txt](LICENSES/GPL-2.0-or-later.txt)
 for license details.
 
@@ -83,18 +91,30 @@ Note that this software relies on 3rd party MIT-licensed projects
 and various other freely distributable files some of which are
 unused only for testing and not part of the application itself.
 
+For convenience, GammaRay source bundles (.tar.gz or .zip files) contain code for
+the [graphviz library](https://gitlab.com/graphviz/graphviz) which is licensed
+according to the [Eclipse Public License v1.0](https://www.eclipse.org/legal/epl/epl-v10.html).
+
 ## About KDAB
 
 GammaRay is supported and maintained by Klarälvdalens Datakonsult AB (KDAB).
 
-The KDAB Group is the global No.1 software consultancy for Qt, C++ and
-OpenGL applications across desktop, embedded and mobile platforms.
+The [KDAB](https://www.kdab.com) Group is a globally recognized provider for software
+consulting, development and training, specializing in embedded devices and complex
+cross-platform desktop applications. In addition to being leading experts in Qt, C++ and 3D
+technologies for over two decades, KDAB provides deep expertise across the stack,
+including Linux, Rust and modern UI frameworks. With 100+ employees from 20 countries
+and offices in Sweden, Germany, USA, France and UK, KDAB serves clients around the world.
 
-The KDAB Group provides consulting and mentoring for developing Qt applications
-from scratch and in porting from all popular and legacy frameworks to Qt.
-We continue to help develop parts of Qt and are one of the major contributors
-to the Qt Project. We can give advanced or standard trainings anywhere
-around the globe on Qt as well as C++, OpenGL, 3D and more.
+Please visit <https://www.kdab.com> to meet the people who write code like this.
+
+Blogs and publications: <https://www.kdab.com/resources>
+
+Videos (Tutorials and more): <https://www.youtube.com/@KDABtv>
+
+Software Developer Training for Qt, Modern C++, Rust, OpenGL and more: <https://training.kdab.com>
+
+Software Consulting and Development Services for Embedded and Desktop Applications <https://www.kdab.com/services/>
 
 If you would like to have a custom plugin for GammaRay to visualize, profile
 or debug your own specific components or applications, get in touch with us

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,7 +12,6 @@
 */
 
 /*!
-    \contentspage {Gettings Started}
     \nextpage {Tools}
     \previouspage {Qt Creator Integration}
     \page gammaray-command-line.html
@@ -78,6 +77,12 @@
         \li Explicitly specify which probe to use. This should only be needed when the
         automatic probe ABI detection fails, or on platforms that don't have probe ABI
         detection implemented yet.
+    \row
+        \li \c --detect-abi
+        \li Print the detected probe ABI of the target and the probe that would be used,
+        then exit without injecting. If no matching probe is found, the reason and the
+        available probes are printed. The exit code is 0 if a matching probe was found,
+        and 1 otherwise.
     \row
         \li \c{--connect tcp://<host>[:port]}
         \li Connect to a target with an already injected GammaRay probe. Useful for

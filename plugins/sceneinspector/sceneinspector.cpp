@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -31,7 +31,6 @@
 #include <common/endpoint.h>
 #include <common/metatypedeclarations.h>
 #include <common/objectmodel.h>
-#include <common/recursiveproxymodelbase.h>
 
 #include <QGraphicsEffect>
 #include <QGraphicsItem>
@@ -42,6 +41,7 @@
 #include <QGraphicsView>
 #include <QItemSelectionModel>
 #include <QTextDocument>
+#include <QSortFilterProxyModel>
 
 #include <iostream>
 
@@ -90,7 +90,7 @@ SceneInspector::SceneInspector(Probe *probe, QObject *parent)
             this, &SceneInspector::sceneSelected);
 
     m_sceneModel = new SceneModel(this);
-    auto sceneProxy = new ServerProxyModel<RecursiveProxyModelBase>(this);
+    auto sceneProxy = new ServerProxyModel<QSortFilterProxyModel>(this);
     sceneProxy->setSourceModel(m_sceneModel);
     sceneProxy->addRole(ObjectModel::ObjectIdRole);
     probe->registerModel(QStringLiteral("com.kdab.GammaRay.SceneGraphModel"), sceneProxy);
@@ -113,8 +113,6 @@ void SceneInspector::sceneSelected(const QItemSelection &selection)
 
     m_sceneModel->setScene(scene);
     connectToScene();
-    // TODO remote support when a different graphics scene was selected
-    // ui->graphicsSceneView->setGraphicsScene(scene);
 }
 
 void SceneInspector::connectToScene()

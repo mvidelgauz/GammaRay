@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Stephen Kelly <stephen.kelly@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -14,8 +14,6 @@
 #include "statemachinedebuginterface.h"
 #include "statemachinewatcher.h"
 
-#include <compat/qasconst.h>
-
 #include <core/objectmodelbase.h>
 #include <core/util.h>
 
@@ -25,8 +23,6 @@
 #include <QStringList>
 
 #include <algorithm>
-
-// #include <modeltest.h>
 
 using namespace GammaRay;
 
@@ -108,16 +104,16 @@ void StateModelPrivate::stateConfigurationChanged()
     std::set_difference(newConfig.begin(), newConfig.end(),
                         m_lastConfiguration.begin(), m_lastConfiguration.end(),
                         std::back_inserter(difference));
-    for (State state : qAsConst(difference))
+    for (State state : std::as_const(difference))
         emitDataChangedForState(state);
     // states which became inactive
     difference.clear();
     std::set_difference(m_lastConfiguration.begin(), m_lastConfiguration.end(),
                         newConfig.begin(), newConfig.end(),
                         std::back_inserter(difference));
-    for (State state : qAsConst(difference))
+    for (State state : std::as_const(difference))
         emitDataChangedForState(state);
-    m_lastConfiguration = newConfig;
+    m_lastConfiguration = std::move(newConfig);
 }
 
 void StateModelPrivate::handleMachineDestroyed(QObject *)
@@ -218,7 +214,7 @@ QVariant StateModel::data(const QModelIndex &index, int role) const
 int StateModel::rowCount(const QModelIndex &parent) const
 {
     Q_D(const StateModel);
-    return d->children(d->mapModelIndex2State(parent)).count();
+    return d->children(d->mapModelIndex2State(parent)).size();
 }
 
 QModelIndex StateModel::index(int row, int column, const QModelIndex &parent) const

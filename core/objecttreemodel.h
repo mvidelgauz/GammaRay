@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -35,15 +35,14 @@ public:
 
     Q_INVOKABLE static QPair<int, QVariant> defaultSelectedItem();
 
+    QModelIndex indexForObject(QObject *object) const;
+
 private slots:
     void objectAdded(QObject *obj);
     void objectRemoved(QObject *obj);
     void objectReparented(QObject *obj);
     void objectFavorited(QObject *obj);
     void objectUnfavorited(QObject *obj);
-
-private:
-    QModelIndex indexForObject(QObject *object) const;
 
 private:
     QHash<QObject *, QObject *> m_childParentMap;

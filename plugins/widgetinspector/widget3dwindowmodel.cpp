@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Daniel Vrátil <daniel.vratil@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -69,7 +69,7 @@ QModelIndex Widget3DWindowModel::index(int row, int column, const QModelIndex &p
         return QModelIndex();
     }
 
-    if (row < 0 || row >= mNodes.count() || column != 0) {
+    if (row < 0 || row >= mNodes.size() || column != 0) {
         return QModelIndex();
     }
 
@@ -84,7 +84,7 @@ QModelIndex Widget3DWindowModel::parent(const QModelIndex &) const
 
 int Widget3DWindowModel::rowCount(const QModelIndex &parent) const
 {
-    return parent.isValid() ? 0 : mNodes.count();
+    return parent.isValid() ? 0 : mNodes.size();
 }
 
 int Widget3DWindowModel::columnCount(const QModelIndex &) const

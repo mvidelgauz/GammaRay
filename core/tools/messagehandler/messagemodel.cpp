@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Milian Wolff <milian.wolff@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -32,7 +32,7 @@ void MessageModel::addMessage(const DebugMessage &message)
     /// WARNING: do not trigger *any* kind of debug output here
     ///          this would trigger an infinite loop and hence crash!
 
-    beginInsertRows(QModelIndex(), m_messages.count(), m_messages.count());
+    beginInsertRows(QModelIndex(), m_messages.size(), m_messages.size());
     m_messages << message;
     endInsertRows();
 }
@@ -48,7 +48,7 @@ int MessageModel::rowCount(const QModelIndex &parent) const
     if (parent.isValid())
         return 0;
 
-    return m_messages.count();
+    return m_messages.size();
 }
 
 QVariant MessageModel::data(const QModelIndex &index, int role) const

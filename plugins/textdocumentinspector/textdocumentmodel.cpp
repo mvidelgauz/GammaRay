@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -135,7 +135,6 @@ void TextDocumentModel::fillBlock(const QTextBlock &block, QStandardItem *parent
         appendRow(parent, item, it.fragment().charFormat(), b);
         if (!block.layout())
             continue;
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
         foreach (const auto &range, block.layout()->formats()) {
             const auto start = std::max(range.start, it.fragment().position() - block.position());
             const auto end = std::min(range.start + range.length,
@@ -146,7 +145,6 @@ void TextDocumentModel::fillBlock(const QTextBlock &block, QStandardItem *parent
             auto child = new QStandardItem(tr("Layout Range: %1").arg(it.fragment().text().mid(start, end - start)));
             appendRow(item, child, range.format, QRectF());
         }
-#endif
     }
 }
 

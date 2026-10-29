@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -19,8 +19,7 @@
 
 #include <common/objectbroker.h>
 
-#include <3rdparty/qt/modeltest.h>
-
+#include <QAbstractItemModelTester>
 #include <QDebug>
 
 using namespace GammaRay;
@@ -30,7 +29,8 @@ class MetaObjectTreeModelTest : public BaseProbeTest
 {
     Q_OBJECT
 signals:
-    void destroyed(); // to trigger the QMO validator
+    // to trigger the QMO validator
+    void destroyed(); // clazy:exclude=overloaded-signal
 
 private slots:
     void modelTest()
@@ -42,7 +42,7 @@ private slots:
         MetaObjectTreeClientProxyModel model;
         model.setSourceModel(srcModel);
 
-        ModelTest modelTest(&model);
+        QAbstractItemModelTester modelTest(&model);
         Probe::instance()->discoverObject(this);
         QTest::qWait(150); // wait for compressed change signals
     }

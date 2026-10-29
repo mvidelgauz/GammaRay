@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Manfred Tonch <manfred.tonch@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -14,8 +14,7 @@
 #ifndef GAMMARAY_VISIBILITYFILTERPROXYMODEL_H
 #define GAMMARAY_VISIBILITYFILTERPROXYMODEL_H
 
-#include "gammaray_common_export.h"
-#include "common/recursiveproxymodelbase.h"
+#include <QSortFilterProxyModel>
 
 namespace GammaRay {
 
@@ -24,7 +23,7 @@ namespace GammaRay {
  *
  * Filter in and sort according to the objects list.
  */
-class VisibilityFilterProxyModel : public RecursiveProxyModelBase
+class VisibilityFilterProxyModel : public QSortFilterProxyModel
 {
     Q_OBJECT
 
@@ -51,7 +50,7 @@ protected:
      * @return true if the item in the row can be included in the model;
      *         otherwise returns false.
      */
-    bool acceptRow(int source_row, const QModelIndex &source_parent) const override;
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
 
 private:
     bool m_hideItems;

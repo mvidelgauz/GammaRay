@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -20,8 +20,6 @@
 #include <common/modelevent.h>
 #include <common/sourcelocation.h>
 #include <common/objectmodel.h>
-
-#include <compat/qasconst.h>
 
 #include <QAbstractItemModel>
 #include <QAssociativeIterable>
@@ -184,7 +182,7 @@ void RemoteModelServer::newRequest(const GammaRay::Message &msg)
 
         Message msg(m_myAddress, Protocol::ModelContentReply);
         msg << quint32(indexes.size());
-        for (const auto &qmIndex : qAsConst(indexes)) {
+        for (const auto &qmIndex : std::as_const(indexes)) {
             msg << Protocol::fromQModelIndex(qmIndex);
             msg << filterItemData(m_model->itemData(qmIndex));
             msg.writeCStringMarker(GammaRay::REMOTE_MODEL_MARKER, sizeof(GammaRay::REMOTE_MODEL_MARKER) - 1);
@@ -279,6 +277,33 @@ QMap<int, QVariant> RemoteModelServer::filterItemData(QMap<int, QVariant> &&item
 
 bool RemoteModelServer::canSerialize(const QVariant &value) const
 {
+    // most values are of a few types that can always be serialized, the checks below would cost a
+    // lot for every single one of them
+    switch (value.userType()) {
+    case QMetaType::Bool:
+    case QMetaType::Int:
+    case QMetaType::UInt:
+    case QMetaType::LongLong:
+    case QMetaType::ULongLong:
+    case QMetaType::Double:
+    case QMetaType::Float:
+    case QMetaType::QChar:
+    case QMetaType::QString:
+    case QMetaType::QStringList:
+    case QMetaType::QByteArray:
+    case QMetaType::QSize:
+    case QMetaType::QSizeF:
+    case QMetaType::QPoint:
+    case QMetaType::QPointF:
+    case QMetaType::QRect:
+    case QMetaType::QRectF:
+    case QMetaType::QColor:
+    case QMetaType::QPixmap:
+        return true;
+    default:
+        break;
+    }
+
     if (qstrcmp(value.typeName(), "QJSValue") == 0 || qstrcmp(value.typeName(), "QJsonObject") == 0 || qstrcmp(value.typeName(), "QJsonValue") == 0 || qstrcmp(value.typeName(), "QJsonArray") == 0) {
         // QJSValue tries to serialize nested elements and asserts if that fails
         // too bad it can contain QObject* as nested element, which obviously can't be serialized...
@@ -311,7 +336,7 @@ bool RemoteModelServer::canSerialize(const QVariant &value) const
     // ugly, but there doesn't seem to be a better way atm to find out without trying
     m_dummyBuffer->seek(0);
     QDataStream stream(m_dummyBuffer);
-    return QMetaType::save(stream, value.userType(), value.constData());
+    return QMetaType(value.userType()).save(stream, value.constData());
 }
 
 void RemoteModelServer::modelMonitored(bool monitored)
@@ -522,20 +547,12 @@ void RemoteModelServer::setProxyFilterKeyColumn(int column)
 RemoteModelServer::RegExpT RemoteModelServer::proxyFilterRegExp() const
 {
     if (auto proxy = qobject_cast<QSortFilterProxyModel *>(m_model))
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         return proxy->filterRegularExpression();
-#else
-        return proxy->filterRegExp();
-#endif
     return {};
 }
 
 void RemoteModelServer::setProxyFilterRegExp(const RegExpT &regExp)
 {
     if (auto proxy = qobject_cast<QSortFilterProxyModel *>(m_model))
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         proxy->setFilterRegularExpression(regExp);
-#else
-        proxy->setFilterRegExp(regExp);
-#endif
 }

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -32,11 +32,7 @@ QStringList AboutData::authors()
 {
     QFile f(QStringLiteral(":/gammaray/authors"));
     if (f.open(QFile::ReadOnly)) {
-#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
-        return QString::fromUtf8(f.readAll()).split('\n', QString::SkipEmptyParts);
-#else
         return QString::fromUtf8(f.readAll()).split('\n', Qt::SkipEmptyParts);
-#endif
     } else {
         Q_ASSERT_X(false, "AboutData::authors()", "cannot open the authors resource file");
         qWarning() << "Failed to open the authors resource file";
@@ -63,9 +59,9 @@ QString AboutData::aboutTitle()
 QString AboutData::aboutHeader()
 {
     return AboutDataContext::tr(
-        "<p>The Qt application inspection and manipulation tool."
+        "<p>The Qt application inspection and manipulation tool. "
         "Learn more at <a href=\"https://www.kdab.com/gammaray\">https://www.kdab.com/gammaray/</a>.</p>"
-        "<p>Copyright (C) 2010-2023 Klarälvdalens Datakonsult AB, "
+        "<p>&copy; Klarälvdalens Datakonsult AB, "
         "a KDAB Group company, <a href=\"mailto:info@kdab.com\">info@kdab.com</a></p>"
         "<p>StackWalker code Copyright (c) 2005-2019, Jochen Kalmbach, All rights reserved<br>"
         "lz4 fast LZ compression code Copyright (C) 2011-2020, Yann Collet, All rights reserved<br>"

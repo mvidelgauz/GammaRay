@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -41,7 +41,6 @@ int DynamicPropertyAdaptor::count() const
 {
     if (!object().isValid())
         return 0;
-    Q_ASSERT(m_propNames.size() == object().qtObject()->dynamicPropertyNames().size());
     return m_propNames.size();
 }
 
@@ -50,8 +49,6 @@ PropertyData DynamicPropertyAdaptor::propertyData(int index) const
     PropertyData data;
     if (!object().isValid())
         return data;
-
-    Q_ASSERT(m_propNames.size() == object().qtObject()->dynamicPropertyNames().size());
 
     data.setName(m_propNames.at(index));
     data.setValue(object().qtObject()->property(m_propNames.at(index)));
@@ -66,7 +63,7 @@ void DynamicPropertyAdaptor::writeProperty(int index, const QVariant &value)
         return;
     Q_ASSERT(index < m_propNames.size());
 
-    const auto propName = m_propNames.at(index);
+    const auto &propName = m_propNames.at(index);
     object().qtObject()->setProperty(propName, value);
 }
 
@@ -95,10 +92,14 @@ bool DynamicPropertyAdaptor::eventFilter(QObject *receiver, QEvent *event)
             Q_ASSERT(oldIdx == newIdx);
             emit propertyChanged(oldIdx, oldIdx);
         } else if (newIdx >= 0) {
+            // QObject tells us after the fact, so keep reporting the old properties until the
+            // change is announced
+            emit propertyAboutToBeAdded(newIdx, newIdx);
             m_propNames = obj->dynamicPropertyNames();
             emit propertyAdded(newIdx, newIdx);
         } else {
             Q_ASSERT(oldIdx >= 0);
+            emit propertyAboutToBeRemoved(oldIdx, oldIdx);
             m_propNames = obj->dynamicPropertyNames();
             emit propertyRemoved(oldIdx, oldIdx);
         }

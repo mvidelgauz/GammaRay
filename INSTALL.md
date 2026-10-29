@@ -8,19 +8,20 @@ you can pass to CMake.
 To build GammaRay you will need *at least*:
 
 - CMake 3.16.0
-- a C++ compiler with C++11 support
-- Qt 5.5 or higher, or Qt 6
+- a C++ compiler with C++17 support
+- Qt 6.5 or higher
+  (GammaRay v3.2.0 was the last release to support Qt versions less than 6.5)
 
 Please be aware that GammaRay heavily relies on Qt private headers which can
 be changed at will by The Qt Company between releases and may need to be
 specially installed from your distribution. Before running CMake, make sure
 your Qt installation provides private Qt headers.
 
-i.e. when using distro provided Qt make sure you have (or the equivalent for Qt6):
+i.e. when using distro provided Qt make sure you have:
 
-- Redhat,Fedora: qt5-qtbase-private-devel
-- Debian,Ubuntu: qtbase5-private-dev qtdeclarative5-private-dev
-- SUSE: libqt5-qtbase-private-headers-devel libqt5-qtdeclarative-private-headers-devel
+- Redhat,Fedora: qt6-qtbase-private-devel
+- Debian,Ubuntu: qt6-base-private-dev qt6-declarative-private-dev qt6-documentation-tools
+- SUSE: libqt6-qtbase-private-headers-devel libqt6-qtdeclarative-private-headers-devel
 
 Optional FOSS packages (eg. KDSME, etc) provide extra functionality.
 See the "Optional Dependencies" section below for more details.
@@ -33,7 +34,8 @@ Make sure you have cmake, ninja, compiler, Qt, etc in PATH.
 Adapt the instructions to suit your cmake generator and operating system.
 
 ```bash
-    cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/path/where/to/install ../path/to/gammaray
+    mkdir build && cd build/
+    cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/path/where/to/install ..
     cmake --build .
     cmake --build . --target install
 ```
@@ -45,13 +47,13 @@ CMake option `CMAKE_PREFIX_PATH` and point it to the folder of your installation
 For example:
 
 ```bash
-    cmake -DCMAKE_PREFIX_PATH=$HOME/Qt/5.11.2/gcc_64 ..
+    cmake -DCMAKE_PREFIX_PATH=$HOME/Qt/6.6.0/gcc_64 ..
 ```
 
 or
 
 ```bash
-    set CMAKE_PREFIX_PATH=c:\Qt\5.15.4\msvc2019_64
+    set CMAKE_PREFIX_PATH=c:\Qt\6.6.0\msvc2019_64
     cmake...
 ```
 
@@ -69,7 +71,7 @@ Build on Android:
     cd android-build
     export ANDROID_NDK=/path/to/android-ndk
     cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
-          -DCMAKE_FIND_ROOT_PATH=/android/qt5/install/path \
+          -DCMAKE_FIND_ROOT_PATH=/android/qt6/install/path \
           -DCMAKE_INSTALL_PREFIX=/install/path ..
     make [-j CPU_NUMBER+2]
     make install
@@ -111,7 +113,7 @@ or
 
 ... to remove all forwards
 
-### Additional notes
+### Debug builds
 
 To build a debug version pass `-DCMAKE_BUILD_TYPE=Debug` to cmake.
 
@@ -141,10 +143,21 @@ You can make probe only builds that way:
 
 You can still use any cmake flags you want like `CMAKE_DISABLE_FIND_PACKAGE_<PACKAGE>` etc.
 
+## Building with KDStateMachineEditor
+
+The KDAB library KDStateMachineEditor is required when building the
+State Machine Viewer plugin (-DGAMMARAY_WITH_KDSME=True).
+
+The code for this library (and its dependencies, most notably graphviz)
+is provided with the source bundle in the 3rdparty folder; alternatively,
+developers can git clone the associated submodule into 3rdparty.
+
+Note that additional tools (like Python) may be required to build graphviz.
+
 ## Optional Dependencies
 
 GammaRay relies on optional (FOSS) dependencies to help provide some of its
-functionality, most prominently KDSME (<https://github.com/KDAB/KDStateMachineEditor>).
+functionality.
 
 When you run cmake it will inform you about these missing dependencies.
 

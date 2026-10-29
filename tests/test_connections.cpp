@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Milian Wolff <milian.wolff@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,8 +12,6 @@
 */
 
 #include "test_connections.h"
-
-#include <compat/qasconst.h>
 
 #include <QApplication>
 #include <QDebug>
@@ -93,7 +91,7 @@ void TestConnections::timeout()
         obj->deleteLater();
     } else {
         // delete last objects
-        for (int i = 0; i < m_objects.count(); ++i) {
+        for (int i = 0; i < m_objects.size(); ++i) {
             QObject *obj = m_objects.at(i);
             switch (m_type) {
             case Delete:
@@ -187,7 +185,7 @@ void TestWaiter::startThreadsAndWaitForFinished()
     if (m_threads.isEmpty() && m_tester.isEmpty())
         return;
 
-    for (TestThread *thread : qAsConst(m_threads)) {
+    for (TestThread *thread : std::as_const(m_threads)) {
         thread->start();
     }
 
@@ -241,7 +239,7 @@ void TestMain::threading()
     TestWaiter waiter;
     const int timeouts = 10;
     // some testers to be run in the main thread
-    // with varying timouts
+    // with varying timeouts
     TestConnections tester1(TestConnections::NoEventLoop, timeouts, 10);
     waiter.addTester(&tester1);
     TestConnections tester2(TestConnections::Delete, timeouts, 11);

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -23,15 +23,10 @@
 #include <core/propertyfilter.h>
 #include <core/toolmanager.h>
 
-#include <3rdparty/qt/modeltest.h>
-
+#include <QAbstractItemModelTester>
 #include <QItemSelectionModel>
 #include <QSortFilterProxyModel>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#include <QRegExp>
-#else
 #include <QRegularExpression>
-#endif
 
 #include <QQuickItem>
 #include <private/qquickitem_p.h>
@@ -58,6 +53,22 @@ private:
         QTest::keyClick(view(), Qt::Key_Right);
     }
 
+    // walks the whole proxy, so mappings exist for all of it, and returns the number of rows
+    static int compareWithSource(QSortFilterProxyModel *proxy, const QModelIndex &proxyParent = {})
+    {
+        const int rows = proxy->rowCount(proxyParent);
+        if (rows != proxy->sourceModel()->rowCount(proxy->mapToSource(proxyParent)))
+            return -1;
+        int count = rows;
+        for (int row = 0; row < rows; ++row) {
+            const int childCount = compareWithSource(proxy, proxy->index(row, 0, proxyParent));
+            if (childCount < 0)
+                return -1;
+            count += childCount;
+        }
+        return count;
+    }
+
 private slots:
     static void initTestCase()
     {
@@ -70,17 +81,45 @@ private slots:
 
         itemModel = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.QuickItemModel"));
         QVERIFY(itemModel);
-        new ModelTest(itemModel, view());
+        new QAbstractItemModelTester(itemModel, view());
 
         sgModel = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.QuickSceneGraphModel"));
         QVERIFY(sgModel);
-        new ModelTest(sgModel, view());
+        new QAbstractItemModelTester(sgModel, view());
 
         inspector = ObjectBroker::object<QuickInspectorInterface *>();
         QVERIFY(inspector);
         inspector->setServerSideDecorationsEnabled(false);
         inspector->selectWindow(0);
         QTest::qWait(1);
+    }
+
+    void testModelsNodeMove()
+    {
+        QVERIFY(showSource(QStringLiteral("qrc:/manual/sgnodemovetest.qml")));
+        auto proxy = qobject_cast<QSortFilterProxyModel *>(sgModel);
+        QVERIFY(proxy);
+        const int nodeCount = compareWithSource(proxy);
+        QVERIFY(nodeCount > 0);
+
+        auto container = view()->rootObject()->findChild<QQuickItem *>(QStringLiteral("container"));
+        QVERIFY(container);
+
+        // inserts a clip node below the item node, which takes over the existing child nodes
+        container->setClip(true);
+        QTRY_COMPARE(compareWithSource(proxy), nodeCount + 1);
+
+        container->setClip(false);
+        QTRY_COMPARE(compareWithSource(proxy), nodeCount);
+
+        container->setClip(true);
+        QTRY_COMPARE(compareWithSource(proxy), nodeCount + 1);
+        const auto children = container->childItems();
+        for (auto child : children) {
+            delete child;
+            QTest::qWait(20);
+            QVERIFY(compareWithSource(proxy) > 0);
+        }
     }
 
     void testModelsReparent()
@@ -116,18 +155,11 @@ private slots:
 
         itemModel->setProperty("filterKeyColumn", -1);
         itemModel->setProperty("filterRegExp",
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                               QRegExp("Rect", Qt::CaseInsensitive, QRegExp::FixedString));
-#else
                                QRegularExpression("Rect", QRegularExpression::CaseInsensitiveOption));
-#endif
+
         sgModel->setProperty("filterKeyColumn", -1);
         sgModel->setProperty("filterRegExp",
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                             QRegExp("Transform", Qt::CaseInsensitive, QRegExp::FixedString));
-#else
                              QRegularExpression("Transform", QRegularExpression::CaseInsensitiveOption));
-#endif
         QVERIFY(itemModel->rowCount() > 0);
         QVERIFY(sgModel->rowCount() > 0);
 
@@ -136,13 +168,8 @@ private slots:
             QTest::keyClick(view(), Qt::Key_Down);
         QTest::qWait(20);
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        itemModel->setProperty("filterRegExp", QRegExp());
-        sgModel->setProperty("filterRegExp", QRegExp());
-#else
         itemModel->setProperty("filterRegExp", QRegularExpression());
         sgModel->setProperty("filterRegExp", QRegularExpression());
-#endif
 
         QTest::qWait(20);
     }
@@ -201,12 +228,12 @@ private slots:
         if (!isViewExposed())
             return;
 
-        QVERIFY(gotFrameSpy.wait() || gotFrameSpy.count() >= 1);
+        QVERIFY(gotFrameSpy.wait() || gotFrameSpy.size() >= 1);
 
         QVERIFY(!renderSpy.isEmpty());
         QVERIFY(!gotFrameSpy.isEmpty());
         // take the last frame
-        const auto last = gotFrameSpy.count() - 1;
+        const auto last = gotFrameSpy.size() - 1;
         const auto frame = gotFrameSpy.at(last).at(0).value<RemoteViewFrame>();
         QImage img = frame.image();
         QTransform transform = frame.transform();

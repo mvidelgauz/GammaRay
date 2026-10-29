@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Stephen Kelly <stephen.kelly@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -65,9 +65,7 @@ FontBrowserWidget::FontBrowserWidget(QWidget *parent)
         "com.kdab.GammaRay.FontModel"));
     auto proxy = new QSortFilterProxyModel(this);
     proxy->setSourceModel(fontModel);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     proxy->setRecursiveFilteringEnabled(true);
-#endif
     proxy->setFilterRole(FontBrowserInterface::FontSearchRole);
     proxy->setSortRole(FontBrowserInterface::SortRole);
     new SearchLineController(ui->fontSearchLine, proxy);

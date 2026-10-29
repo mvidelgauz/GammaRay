@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Milian Wolff <milian.wolff@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -53,7 +53,6 @@ AttachDialog::AttachDialog(QWidget *parent, Qt::WindowFlags f)
 
     m_proxyModel = new ProcessFilterModel(this);
     m_proxyModel->setSourceModel(m_model);
-    m_proxyModel->setDynamicSortFilter(true);
 
     ui->view->setModel(m_proxyModel);
     // hide state
@@ -61,6 +60,7 @@ AttachDialog::AttachDialog(QWidget *parent, Qt::WindowFlags f)
     ui->view->sortByColumn(ProcessModel::PIDColumn, Qt::DescendingOrder);
     ui->view->setSortingEnabled(true);
 
+    ui->view->setTextElideMode(Qt::ElideMiddle);
     ui->view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     ui->view->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -160,8 +160,12 @@ void AttachDialog::updateProcessesFinished()
     }
     const int oldPid = pid();
     m_model->mergeProcesses(watcher->result());
-    if (oldPid != pid())
+    if (oldPid == 0) {
+        ui->view->setCurrentIndex(m_proxyModel->index(0, 0));
+    } else if (oldPid != pid()) {
         ui->view->setCurrentIndex(QModelIndex());
+    }
+
     watcher->deleteLater();
 
     QTimer::singleShot(1000, this, &AttachDialog::updateProcesses);

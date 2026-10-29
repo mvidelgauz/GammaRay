@@ -1,22 +1,33 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
+# This file is part of GammaRay, the Qt application inspection and manipulation tool.
+#
+
 # probe plugin
 if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
     set(gammaray_widgetinspector_plugin_srcs
-        widgetinspector.cpp
-        widgetinspectorinterface.cpp
-        widgetinspectorserver.cpp
         overlaywidget.cpp
-        widgettreemodel.cpp
-        widgetpaintanalyzerextension.cpp
-        widget3dmodel.cpp
+        overlaywidget.h
         waextension/widgetattributeextension.cpp
+        waextension/widgetattributeextension.h
+        widget3dmodel.cpp
+        widget3dmodel.h
+        widgetinspector.cpp
+        widgetinspector.h
+        widgetinspectorinterface.cpp
+        widgetinspectorinterface.h
+        widgetinspectorserver.cpp
+        widgetinspectorserver.h
+        widgetpaintanalyzerextension.cpp
+        widgetpaintanalyzerextension.h
+        widgettreemodel.cpp
+        widgettreemodel.h
     )
 
     gammaray_add_plugin(
@@ -30,6 +41,7 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
     target_link_libraries(
         gammaray_widgetinspector_plugin
         Qt::Gui
+        Qt::CorePrivate
         Qt::Widgets
         gammaray_kitemmodels
         gammaray_core
@@ -39,7 +51,7 @@ endif()
 # probe export actions
 add_library(
     gammaray_widget_export_actions SHARED
-    uiextractor.cpp widgetinspector_export_actions.cpp
+    uiextractor.cpp uiextractor.h widgetinspector_export_actions.cpp
 )
 
 set_target_properties(

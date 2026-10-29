@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -28,9 +28,7 @@
 
 #include <private/qquickitem_p.h>
 #include <private/qsgdistancefieldglyphnode_p_p.h>
-#if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 #include <private/qobject_p_p.h>
-#endif
 
 using namespace GammaRay;
 
@@ -90,14 +88,9 @@ bool TextureExtension::setQObject(QObject *obj)
     // we look at its incoming signal/slot connections, it's watching the layer that way...
     if (obj->inherits("QQuickShaderEffectSource")) {
         auto d = QObjectPrivate::get(obj);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
         QObjectPrivate::ConnectionData *cd = d->connections.loadRelaxed();
         if (cd && cd->senders) {
             auto *senders = cd->senders;
-#else
-        if (d->senders) {
-            auto *senders = d->senders;
-#endif
             for (QObjectPrivate::Connection *s = senders; s; s = s->next) {
                 if (!s->sender)
                     continue;
@@ -124,13 +117,8 @@ bool TextureExtension::setObject(void *object, const QString &typeName)
             return setQObject(mat->texture());
 
         if (auto mat = dynamic_cast<QSGDistanceFieldTextMaterial *>(material)) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             if (!mat->texture())
                 return false;
-#else
-            if (!mat->texture() || mat->texture()->textureId <= 0)
-                return false;
-#endif
             m_remoteView->resetView();
             m_currentMaterial = mat;
             m_remoteView->sourceChanged();
@@ -157,7 +145,7 @@ void TextureExtension::textureGrabbed(QSGTexture *tex, const QImage &img)
     m_remoteView->sendFrame(f);
 }
 
-void TextureExtension::textureGrabbed(void *data, const QImage &img)
+void TextureExtension::textureGrabbedUntyped(void *data, const QImage &img)
 {
     if (m_currentMaterial != data || !m_remoteView->isActive())
         return;
@@ -170,16 +158,10 @@ void TextureExtension::triggerGrab()
 {
     if (m_currentTexture)
         QSGTextureGrabber::instance()->requestGrab(m_currentTexture);
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     else if (m_currentMaterial) {
         auto texture = m_currentMaterial->wrapperTexture()->nativeInterface<QNativeInterface::QSGOpenGLTexture>();
         QSGTextureGrabber::instance()->requestGrab(texture->nativeTexture(), m_currentMaterial->texture()->size, m_currentMaterial);
     }
-#else
-    else if (m_currentMaterial)
-        QSGTextureGrabber::instance()->requestGrab(m_currentMaterial->texture()->textureId, m_currentMaterial->texture()->size, m_currentMaterial);
-#endif
 }
 
 bool GammaRay::TextureExtension::ensureSetup()
@@ -188,10 +170,10 @@ bool GammaRay::TextureExtension::ensureSetup()
         return true;
     if (!QSGTextureGrabber::instance())
         return false;
-    connect(QSGTextureGrabber::instance(), static_cast<void (QSGTextureGrabber::*)(QSGTexture *, const QImage &)>(&QSGTextureGrabber::textureGrabbed),
-            this, static_cast<void (TextureExtension::*)(QSGTexture *, const QImage &)>(&TextureExtension::textureGrabbed));
-    connect(QSGTextureGrabber::instance(), static_cast<void (QSGTextureGrabber::*)(void *, const QImage &)>(&QSGTextureGrabber::textureGrabbed),
-            this, static_cast<void (TextureExtension::*)(void *, const QImage &)>(&TextureExtension::textureGrabbed));
+    connect(QSGTextureGrabber::instance(), &QSGTextureGrabber::textureGrabbed,
+            this, &TextureExtension::textureGrabbed);
+    connect(QSGTextureGrabber::instance(), &QSGTextureGrabber::textureGrabbedUntyped,
+            this, &TextureExtension::textureGrabbedUntyped);
     connect(m_remoteView, &RemoteViewServer::requestUpdate, this, &TextureExtension::triggerGrab);
     return m_connected = true;
 }

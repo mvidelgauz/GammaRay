@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -134,7 +134,7 @@ void SelectionModelModel::setModel(QAbstractItemModel *model)
         return;
 
     beginInsertRows(QModelIndex(), 0, models.size() - 1);
-    m_currentSelectionModels = models;
+    m_currentSelectionModels = std::move(models);
     endInsertRows();
 }
 

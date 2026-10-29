@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -106,6 +106,28 @@ int SceneModel::rowCount(const QModelIndex &parent) const
     return topLevelItems().size();
 }
 
+// QGraphicsItem::childItems() sorts them by stacking order, which takes into account the
+// items' insertion order, calls to QGraphicsItem::stackBefore(), and Z-values
+// That's too prone to change under our feet without telling us, breaking model invariants
+// So always just sort them... by pointer address, for lack of a better idea
+namespace {
+QList<QGraphicsItem *> sortedChildItems(QGraphicsItem *parent)
+{
+    auto items = parent->childItems();
+    std::sort(items.begin(), items.end());
+    return items;
+}
+}
+
+int SceneModel::rowForItem(QGraphicsItem *item) const
+{
+    auto parent = item->parentItem();
+    if (parent)
+        return sortedChildItems(parent).indexOf(item);
+    else
+        return topLevelItems().indexOf(item);
+}
+
 QModelIndex SceneModel::parent(const QModelIndex &child) const
 {
     if (!child.isValid())
@@ -113,9 +135,7 @@ QModelIndex SceneModel::parent(const QModelIndex &child) const
     QGraphicsItem *item = static_cast<QGraphicsItem *>(child.internalPointer());
     if (!item->parentItem())
         return QModelIndex();
-    int row = 0;
-    if (item->parentItem()->parentItem())
-        row = item->parentItem()->parentItem()->childItems().indexOf(item->parentItem());
+    const int row = rowForItem(item->parentItem());
     return createIndex(row, 0, item->parentItem());
 }
 
@@ -128,7 +148,7 @@ QModelIndex SceneModel::index(int row, int column, const QModelIndex &parent) co
     QGraphicsItem *parentItem = static_cast<QGraphicsItem *>(parent.internalPointer());
     if (!parentItem || row < 0 || row >= parentItem->childItems().size())
         return QModelIndex();
-    return createIndex(row, column, parentItem->childItems().at(row));
+    return createIndex(row, column, sortedChildItems(parentItem).at(row));
 }
 
 QList<QGraphicsItem *> SceneModel::topLevelItems() const
@@ -136,10 +156,10 @@ QList<QGraphicsItem *> SceneModel::topLevelItems() const
     QList<QGraphicsItem *> topLevel;
     if (!m_scene)
         return topLevel;
-    Q_FOREACH (QGraphicsItem *item, m_scene->items()) {
-        if (!item->parentItem())
-            topLevel.push_back(item);
-    }
+    const auto allItems = m_scene->items();
+    const auto isTopLevel = [](QGraphicsItem *item) { return !item->parentItem(); };
+    std::copy_if(allItems.begin(), allItems.end(), std::back_inserter(topLevel), isTopLevel);
+    std::sort(topLevel.begin(), topLevel.end());
     return topLevel;
 }
 

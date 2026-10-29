@@ -1,14 +1,13 @@
 set(gammaray_kitemmodels_srcs
   klinkitemselectionmodel.cpp
   kmodelindexproxymapper.cpp
-  krecursivefilterproxymodel.cpp
   kdescendantsproxymodel.cpp
   kitemmodels_debug.cpp
 )
 
 add_library(gammaray_kitemmodels SHARED ${gammaray_kitemmodels_srcs})
 
-target_link_libraries(gammaray_kitemmodels LINK_PUBLIC Qt::Core)
+target_link_libraries(gammaray_kitemmodels PUBLIC Qt::Core)
 
 set_target_properties(gammaray_kitemmodels PROPERTIES
   ${GAMMARAY_DEFAULT_LIBRARY_PROPERTIES}

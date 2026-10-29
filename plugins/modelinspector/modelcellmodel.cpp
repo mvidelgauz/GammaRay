@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,8 +12,6 @@
 */
 
 #include "modelcellmodel.h"
-
-#include <compat/qasconst.h>
 
 #include <core/varianthandler.h>
 
@@ -90,14 +88,14 @@ QVector<ModelCellModel::RoleInfo> ModelCellModel::rolesForModel(const QAbstractI
 
     for (auto it = roleNames.constBegin(); it != roleNames.constEnd(); ++it) {
         bool roleFound = false;
-        for (const auto &role : qAsConst(roles)) {
+        for (const auto &role : std::as_const(roles)) {
             if (role.first == it.key()) {
                 roleFound = true;
                 break;
             }
         }
         if (!roleFound) {
-            const auto name = it.value().isEmpty() ? tr("Role #%1").arg(it.key()) : QString::fromLatin1(it.value());
+            const auto &name = it.value().isEmpty() ? tr("Role #%1").arg(it.key()) : QString::fromLatin1(it.value());
             roles.push_back(qMakePair(it.key(), name));
         }
     }

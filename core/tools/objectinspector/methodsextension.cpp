@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Anton Kreuzkamp <anton.kreuzkamp@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -133,7 +133,8 @@ void MethodsExtension::invokeMethod(Qt::ConnectionType connectionType)
         return;
     }
 
-    const QVector<MethodArgument> args = m_methodArgumentModel->arguments();
+    const QVector<MethodArgument> methodArgs = m_methodArgumentModel->arguments();
+    QVector<QGenericArgument> args(methodArgs.begin(), methodArgs.end());
     // TODO retrieve return value and add it to the log in case of success
     // TODO measure execution time and that to the log
     const bool result = method.invoke(

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2012-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2012 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -19,8 +19,6 @@
 
 #include <common/metatypedeclarations.h>
 #include <common/tools/metaobjectbrowser/qmetaobjectmodel.h>
-
-#include <compat/qasconst.h>
 
 #include <QDebug>
 #include <QThread>
@@ -193,7 +191,7 @@ void GammaRay::MetaObjectTreeModel::scheduleDataChange(const QMetaObject *mo)
 
 void GammaRay::MetaObjectTreeModel::emitPendingDataChanged()
 {
-    for (auto mo : qAsConst(m_pendingDataChanged)) {
+    for (auto mo : std::as_const(m_pendingDataChanged)) {
         auto index = indexForMetaObject(mo);
         if (!index.isValid())
             continue;

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2018-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2018 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Anton Kreuzkamp <anton.kreuzkamp@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -15,8 +15,6 @@
 #include "problemcollector.h"
 
 #include "probe.h"
-
-#include <compat/qasconst.h>
 
 using namespace GammaRay;
 
@@ -42,7 +40,7 @@ void GammaRay::ProblemCollector::requestScan()
 {
     clearScans();
 
-    for (const auto &checker : qAsConst(m_availableCheckers)) {
+    for (const auto &checker : std::as_const(m_availableCheckers)) {
         if (checker.enabled)
             checker.callback();
     }

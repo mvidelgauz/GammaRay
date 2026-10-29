@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -15,6 +15,7 @@
 #define TESTHELPERS_H
 
 #include <qnamespace.h>
+#include <functional>
 
 QT_BEGIN_NAMESPACE
 template<typename T>
@@ -46,6 +47,24 @@ QModelIndex searchContainsIndex(QAbstractItemModel *model, const QString &value,
 QModelIndexList searchContainsIndexes(QAbstractItemModel *model, const QString &value,
                                       Qt::MatchFlags extra = Qt::MatchExactly,
                                       int role = Qt::DisplayRole, int column = 0);
+
+class kdScopeGuard
+{
+public:
+    kdScopeGuard(std::function<void()> cb)
+        : m_cb(cb)
+    {
+    }
+    ~kdScopeGuard()
+    {
+        if (m_cb) {
+            m_cb();
+        }
+    }
+
+private:
+    std::function<void()> m_cb;
+};
 }
 
 #define QVERIFY_RETURN_FALSE(statement)                                                        \

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -38,7 +38,7 @@ int TimezoneModel::rowCount(const QModelIndex &parent) const
         return 0;
     if (m_ids.isEmpty())
         m_ids = QTimeZone::availableTimeZoneIds();
-    return m_ids.count();
+    return m_ids.size();
 }
 
 static QString displayNameForAllTimeTypes(const QTimeZone &tz, QTimeZone::NameType nameType)
@@ -62,7 +62,11 @@ QVariant TimezoneModel::data(const QModelIndex &index, int role) const
         case TimezoneModelColumns::IanaIdColumn:
             return tz.id();
         case TimezoneModelColumns::CountryColumn:
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
             return QLocale::countryToString(tz.country());
+#else
+            return QLocale::territoryToString(tz.territory());
+#endif
         case TimezoneModelColumns::StandardDisplayNameColumn:
             return tz.displayName(QTimeZone::StandardTime);
         case TimezoneModelColumns::DSTColumn:

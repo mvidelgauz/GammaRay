@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -22,14 +22,8 @@ using namespace GammaRay;
 
 QT_BEGIN_NAMESPACE
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 GAMMARAY_ENUM_STREAM_OPERATORS(Qt3DCore::QAttribute::AttributeType)
 GAMMARAY_ENUM_STREAM_OPERATORS(Qt3DCore::QAttribute::VertexBaseType)
-#else
-GAMMARAY_ENUM_STREAM_OPERATORS(Qt3DRender::QAttribute::AttributeType)
-GAMMARAY_ENUM_STREAM_OPERATORS(Qt3DRender::QAttribute::VertexBaseType)
-GAMMARAY_ENUM_STREAM_OPERATORS(Qt3DRender::QBuffer::BufferType)
-#endif
 
 QDataStream &operator<<(QDataStream &out, const Qt3DGeometryAttributeData &data)
 {
@@ -62,21 +56,13 @@ bool Qt3DGeometryAttributeData::operator==(const Qt3DGeometryAttributeData &rhs)
 QT_BEGIN_NAMESPACE
 QDataStream &operator<<(QDataStream &out, const Qt3DGeometryBufferData &data)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     out << data.name << data.data;
-#else
-    out << data.name << data.data << data.type;
-#endif
     return out;
 }
 
 QDataStream &operator>>(QDataStream &in, Qt3DGeometryBufferData &data)
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     in >> data.name >> data.data;
-#else
-    in >> data.name >> data.data >> data.type;
-#endif
     return in;
 }
 QT_END_NAMESPACE

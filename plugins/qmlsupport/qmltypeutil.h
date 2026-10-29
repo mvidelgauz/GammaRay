@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -17,11 +17,7 @@
 #include <core/objectinstance.h>
 
 #include <private/qqmlmetatype_p.h>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 2)
 #define GAMMARAY_QQMLTYPE_IS_VALUE_TYPE
-#else
-#undef GAMMARAY_QQMLTYPE_IS_VALUE_TYPE
-#endif
 
 #ifdef GAMMARAY_QQMLTYPE_IS_VALUE_TYPE
 Q_DECLARE_METATYPE(QQmlType)

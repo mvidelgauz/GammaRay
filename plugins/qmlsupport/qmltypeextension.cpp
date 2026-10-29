@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -18,14 +18,8 @@
 #include <core/objectinstance.h>
 #include <core/propertycontroller.h>
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 8, 0)
-#include <private/qqmlcompiler_p.h>
-#else
 #include <private/qv4compileddata_p.h>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
 #include <private/qv4executablecompilationunit_p.h> // created in qtdeclarative commit fd6321c03e2d63997078bfa41332dbddefbb86b0
-#endif
-#endif
 #include <private/qqmldata_p.h>
 #include <private/qqmlmetatype_p.h>
 
@@ -50,17 +44,10 @@ bool QmlTypeExtension::setQObject(QObject *object)
 
     // QML-defined type
     auto data = QQmlData::get(object);
-#if QT_VERSION < QT_VERSION_CHECK(5, 8, 0)
-    if (!data || !data->compiledData)
-        return false;
-
-    const auto qmlType = QQmlMetaType::qmlType(data->compiledData->url());
-#else
     if (!data || !data->compilationUnit)
         return false;
 
     const auto qmlType = QQmlMetaType::qmlType(data->compilationUnit->url());
-#endif
     if (!QmlType::isValid(qmlType))
         return false;
 

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -39,6 +39,19 @@ private slots:
         QVERIFY(!detector.qtCoreForProcess(QCoreApplication::applicationPid()).isEmpty());
         const ProbeABI abi = detector.abiForProcess(QCoreApplication::applicationPid());
         QCOMPARE(abi.id(), QStringLiteral(GAMMARAY_PROBE_ABI));
+    }
+
+    // the reason is given when detection fails, and only then
+    static void testDetectionError()
+    {
+        ProbeABIDetector detector;
+        QString error;
+        QVERIFY(detector.abiForExecutable(QCoreApplication::applicationFilePath(), &error).isValid());
+        QVERIFY(error.isEmpty());
+
+        const QString missing = QStringLiteral("/does/not/exist");
+        QVERIFY(!detector.abiForExecutable(missing, &error).isValid());
+        QCOMPARE(error, QStringLiteral("No QtCore library found among the libraries /does/not/exist uses."));
     }
 
     static void testContainsQtCore_data()
@@ -80,6 +93,11 @@ private slots:
         QTest::newRow("QT") << "QTCore" << false;
         QTest::newRow("prefix") << "libFooQtCore.so" << false;
         QTest::newRow("libQt") << "libQt.dylib" << false;
+
+        // pyside
+        QTest::newRow("QtCore.abi3.so") << "QtCore.abi3.so" << false;
+        QTest::newRow("QtCore.pyd") << "QtCore.pyd" << false;
+        QTest::newRow("QtGui.pyd") << "QtGui.pyd" << false;
     }
 
     static void testContainsQtCore()

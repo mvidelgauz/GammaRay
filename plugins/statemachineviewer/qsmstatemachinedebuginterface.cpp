@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Jan Arne Petersen <jan.petersen@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -241,22 +241,22 @@ QString QSMStateMachineDebugInterface::transitionLabel(Transition t) const
         QString s;
         const auto modifiers = transition->property("modifierMask").value<Qt::KeyboardModifiers>();
         if (modifiers != Qt::NoModifier) {
-            const auto modIdx = staticQtMetaObject.indexOfEnumerator("KeyboardModifiers");
+            const auto modIdx = staticMetaObject.indexOfEnumerator("KeyboardModifiers");
             if (modIdx < 0) {
                 return Util::displayString(transition);
             }
 
-            const auto modEnum = staticQtMetaObject.enumerator(modIdx);
+            const auto modEnum = staticMetaObject.enumerator(modIdx);
             s += modEnum.valueToKey(modifiers) + QStringLiteral(" + ");
         }
 
         const auto key = transition->property("key").toInt();
-        const auto keyIdx = staticQtMetaObject.indexOfEnumerator("Key");
+        const auto keyIdx = staticMetaObject.indexOfEnumerator("Key");
         if (keyIdx < 0) {
             return Util::displayString(transition);
         }
 
-        const auto keyEnum = staticQtMetaObject.enumerator(keyIdx);
+        const auto keyEnum = staticMetaObject.enumerator(keyIdx);
         s += keyEnum.valueToKey(key);
         return s;
     }

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Milian Wolff <milian.wolff@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -140,7 +140,7 @@ void MessageHandlerWidget::fatalMessageReceived(const QString &app, const QStrin
         QPushButton *copyBacktraceButton = new QPushButton(tr("Copy Backtrace"));
         buttons->addButton(copyBacktraceButton, QDialogButtonBox::ActionRole);
 
-        auto joinedBacktrace = backtrace.join(QStringLiteral("\n"));
+        auto joinedBacktrace = backtrace.join(u'\n');
         connect(copyBacktraceButton, &QPushButton::clicked, this, [joinedBacktrace] { copyToClipboard(joinedBacktrace); });
     }
 

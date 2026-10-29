@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2017-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2017 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -13,14 +13,114 @@
 
 #include "baseprobetest.h"
 
+#include <common/objectmodel.h>
+#include <core/probe.h>
+#include <core/probeguard.h>
+#include <core/remote/server.h>
+#include <common/message.h>
+#include <common/protocol.h>
+
+#include <QBuffer>
 #include <QCoreApplication>
 #include <QMetaObject>
+#include <QMutexLocker>
+#include <QRegularExpression>
+#include <QScopeGuard>
 #include <QObject>
+#include <QSignalSpy>
 #include <QTest>
+
+#include <private/qhooks_p.h>
+
+#include <algorithm>
+#include <atomic>
+#include <memory>
+#include <tuple>
+#include <vector>
 
 using namespace GammaRay;
 
 namespace {
+// a signal and a slot, the slot callbacks are only called for connections by method index
+class SlotObject : public QObject
+{
+    Q_OBJECT
+public:
+    void emitSignal()
+    {
+        emit fired();
+    }
+
+signals:
+    void fired();
+
+public slots:
+    void slot()
+    {
+    }
+};
+
+// a hook that was installed before GammaRay's
+static int s_previousHookCalls = 0;
+static void previousAddObjectHook(QObject *)
+{
+    ++s_previousHookCalls;
+}
+
+// gets told when the client starts or stops monitoring it
+class MonitoredObject : public QObject
+{
+    Q_OBJECT
+public:
+    int notifications = 0;
+
+public slots:
+    void monitored(bool)
+    {
+        ++notifications;
+    }
+};
+
+// delivers a message to the server, as if the client had sent it
+struct ServerAccess : public Server
+{
+    using Server::endpointAddress;
+    using Server::messageReceived;
+};
+
+static Protocol::ObjectAddress serverAddress()
+{
+    Protocol::ObjectAddress (Endpoint::*endpointAddress)() const = &ServerAccess::endpointAddress;
+    return (Server::instance()->*endpointAddress)();
+}
+
+static void deliverToServer(const Message &msg)
+{
+    QByteArray data;
+    QBuffer buffer(&data);
+    buffer.open(QIODevice::ReadWrite);
+    msg.write(&buffer);
+    buffer.seek(0);
+    const auto received = Message::readMessage(&buffer);
+    void (Server::*messageReceived)(const Message &) = &ServerAccess::messageReceived;
+    (Server::instance()->*messageReceived)(received);
+}
+
+// remembers the receivers of user events it sees as a plugin's global event filter
+class EventRecorder : public QObject
+{
+    Q_OBJECT
+public:
+    bool eventFilter(QObject *receiver, QEvent *event) override
+    {
+        if (event->type() == QEvent::User)
+            receivers.push_back(receiver);
+        return false;
+    }
+
+    QVector<QObject *> receivers;
+};
+
 int argc = 1;
 char argv0[] = "integrationtest";
 char *argv[] = { argv0 };
@@ -48,6 +148,314 @@ private slots:
         {
             QCoreApplication app(argc, argv);
             createProbe();
+        }
+        QVERIFY(!Probe::instance());
+    }
+
+    // announcing a parent first runs slots that can discover the child already (like the widget
+    // inspector does for the model of a view), which must not announce the child twice
+    void discoverObjectFromObjectCreated()
+    {
+        {
+            QCoreApplication app(argc, argv);
+            createProbe();
+
+            QObject *parent = nullptr;
+            QObject *child = nullptr;
+            {
+                ProbeGuard guard; // not known to the probe yet
+                parent = new QObject;
+                child = new QObject(parent);
+            }
+            QVERIFY(!Probe::instance()->isValidObject(parent));
+            QVERIFY(!Probe::instance()->isValidObject(child));
+
+            connect(Probe::instance(), &Probe::objectCreated, this, [=](QObject *obj) {
+                if (obj == parent)
+                    Probe::instance()->discoverObject(child);
+            });
+            QSignalSpy createdSpy(Probe::instance(), &Probe::objectCreated);
+
+            Probe::instance()->discoverObject(child);
+
+            const auto timesCreated = std::count_if(createdSpy.cbegin(), createdSpy.cend(), [child](const QList<QVariant> &args) {
+                return args.at(0).value<QObject *>() == child;
+            });
+            QCOMPARE(timesCreated, 1);
+            auto listModel = Probe::instance()->objectListModel();
+            QCOMPARE(listModel->match(listModel->index(0, 0), ObjectModel::ObjectRole, QVariant::fromValue(child), -1, Qt::MatchExactly).size(), 1);
+
+            delete parent;
+        }
+        QVERIFY(!Probe::instance());
+    }
+
+    // reparenting a known object to a parent the probe doesn't know yet has to add the parent
+    // first, the object tree can't move a row to a parent it doesn't have
+    void reparentToUntrackedParent()
+    {
+        {
+            QCoreApplication app(argc, argv);
+            createProbe();
+            auto treeModel = Probe::instance()->objectTreeModel();
+            const auto find = [treeModel](QObject *obj) {
+                return treeModel->match(treeModel->index(0, 0), ObjectModel::ObjectRole, QVariant::fromValue(obj), 1,
+                                        Qt::MatchExactly | Qt::MatchRecursive)
+                    .value(0);
+            };
+
+            QObject obj;
+            QTRY_VERIFY(find(&obj).isValid()); // also waits for the probe's event filter
+
+            QObject *newParent = nullptr;
+            {
+                ProbeGuard guard; // not known to the probe yet
+                newParent = new QObject;
+            }
+            QVERIFY(!Probe::instance()->isValidObject(newParent));
+
+            obj.setParent(newParent);
+            QVERIFY(Probe::instance()->isValidObject(newParent));
+
+            QVERIFY(find(newParent).isValid());
+            // the move itself is processed delayed
+            QTRY_COMPARE(find(&obj).parent(), find(newParent));
+            QCOMPARE(treeModel->rowCount(find(newParent)), 1);
+
+            obj.setParent(nullptr);
+            delete newParent;
+        }
+        QVERIFY(!Probe::instance());
+    }
+
+    // the slot end callback of another thread waits for the lock while the probe is destroyed
+    void slotEndCallbackDuringProbeDestruction()
+    {
+        {
+            QCoreApplication app(argc, argv);
+            createProbe();
+            SignalSpyCallbackSet callbacks;
+            callbacks.slotEndCallback = [](QObject *, int) { };
+            Probe::instance()->registerSignalSpyCallbackSet(callbacks);
+
+            // creating objects needs the lock too, so that happens before the main thread has it
+            std::atomic<bool> ready = false;
+            std::atomic<bool> go = false;
+            std::unique_ptr<QThread> thread(QThread::create([&ready, &go] {
+                SlotObject obj;
+                QObject::connect(&obj, SIGNAL(fired()), &obj, SLOT(slot())); // not a functor connection
+                ready = true;
+                while (!go)
+                    QThread::yieldCurrentThread();
+                obj.emitSignal(); // the callback after the slot waits for the lock
+            }));
+            thread->start();
+            while (!ready)
+                QThread::yieldCurrentThread();
+            {
+                QMutexLocker lock(Probe::objectLock());
+                go = true;
+                QThread::msleep(100); // let it reach the lock
+                delete Probe::instance();
+            }
+            QVERIFY(thread->wait(10000));
+        }
+        QVERIFY(!Probe::instance());
+    }
+
+    // detaching deletes the probe, attaching again has to track objects again, and in between the
+    // hooks GammaRay replaced are back
+    void reattach()
+    {
+        {
+            QCoreApplication app(argc, argv);
+            // as if this was installed before GammaRay's hooks, which are installed already
+            const auto originalHooks = std::make_tuple(qtHookData[QHooks::AddQObject], qtHookData[QHooks::RemoveQObject],
+                                                       qtHookData[QHooks::Startup]);
+            const auto restoreHooks = qScopeGuard([originalHooks] {
+                std::tie(qtHookData[QHooks::AddQObject], qtHookData[QHooks::RemoveQObject], qtHookData[QHooks::Startup]) = originalHooks;
+            });
+            qtHookData[QHooks::AddQObject] = reinterpret_cast<quintptr>(&previousAddObjectHook);
+            qtHookData[QHooks::RemoveQObject] = 0;
+            qtHookData[QHooks::Startup] = 0;
+            QVERIFY(!Hooks::hooksInstalled());
+
+            createProbe();
+            QVERIFY(Hooks::hooksInstalled());
+            s_previousHookCalls = 0;
+            delete new QObject;
+            QCOMPARE(s_previousHookCalls, 1); // GammaRay calls the hook it replaced
+
+            delete Probe::instance();
+            QCOMPARE(qtHookData[QHooks::AddQObject], reinterpret_cast<quintptr>(&previousAddObjectHook));
+
+            gammaray_probe_attach();
+            QTRY_VERIFY(Probe::instance());
+            QVERIFY(Hooks::hooksInstalled());
+            auto obj = new QObject;
+            QTRY_VERIFY(Probe::instance()->isValidObject(obj));
+            delete obj;
+            QVERIFY(!Probe::instance()->isValidObject(obj));
+        }
+        QVERIFY(!Probe::instance());
+    }
+
+    static void serverWithoutDevice_data()
+    {
+        QTest::addColumn<QByteArray>("variable");
+        QTest::addColumn<QByteArray>("value");
+        QTest::newRow("remote access disabled") << QByteArray("GAMMARAY_RemoteAccessEnabled") << QByteArray("false");
+        QTest::newRow("unsupported address") << QByteArray("GAMMARAY_ServerAddress") << QByteArray("foo://localhost");
+    }
+
+    // the server has no device to listen with then
+    static void serverWithoutDevice()
+    {
+        QFETCH(QByteArray, variable);
+        QFETCH(QByteArray, value);
+        QCoreApplication app(argc, argv);
+        const auto previous = qgetenv(variable.constData());
+        const auto restore = qScopeGuard([&] {
+            if (previous.isNull())
+                qunsetenv(variable.constData());
+            else
+                qputenv(variable.constData(), previous);
+        });
+        qputenv(variable.constData(), value);
+        if (variable == "GAMMARAY_ServerAddress")
+            QTest::ignoreMessage(QtWarningMsg, QRegularExpression(QStringLiteral("Unsupported transport protocol")));
+
+        Server server;
+        QVERIFY(!server.isListening());
+        QVERIFY(!server.listen());
+        QVERIFY(!server.externalAddress().isValid());
+    }
+
+    // e.g. a remote view, registered as an object without being a message handler
+    void monitorNotifierOfDestroyedObject()
+    {
+        {
+            QCoreApplication app(argc, argv);
+            createProbe();
+            auto obj = new MonitoredObject;
+            const auto address = Server::instance()->registerObject(QStringLiteral("com.kdab.GammaRay.UnitTest.Monitored"), obj,
+                                                                    Server::ExportNothing);
+            Server::instance()->registerMonitorNotifier(address, obj, "monitored");
+            const auto monitor = [address] {
+                Message msg(serverAddress(), Protocol::ObjectMonitored);
+                msg << address;
+                deliverToServer(msg);
+            };
+            monitor();
+            QCOMPARE(obj->notifications, 1);
+
+            delete obj;
+            monitor(); // must not notify the deleted object
+        }
+        QVERIFY(!Probe::instance());
+    }
+
+    // plugins see the events of the application's objects, but not those of GammaRay's own ones
+    void pluginEventFilter()
+    {
+        EventRecorder recorder; // outlives the probe, which doesn't forget it
+        {
+            QCoreApplication app(argc, argv);
+            createProbe();
+            Probe::instance()->installGlobalEventFilter(&recorder);
+
+            QObject parent;
+            auto child = new QObject(&parent);
+            auto probeChild = new QObject(Probe::instance());
+
+            // the probe installs its event filter once the event loop runs
+            QEvent event(QEvent::User);
+            QTRY_VERIFY((QCoreApplication::sendEvent(child, &event), !recorder.receivers.isEmpty()));
+            recorder.receivers.clear();
+
+            QCoreApplication::sendEvent(child, &event);
+            QCoreApplication::sendEvent(probeChild, &event);
+            QCoreApplication::sendEvent(Probe::instance(), &event);
+            QCoreApplication::sendEvent(&parent, &event);
+            QCOMPARE(recorder.receivers, QVector<QObject *>({ child, &parent }));
+
+            delete probeChild;
+        }
+        QVERIFY(!Probe::instance());
+    }
+
+    // the probe learns about the objects created before it exists from a list, which has to
+    // forget the ones destroyed meanwhile, wherever they are in it
+    void objectsDestroyedBeforeProbe()
+    {
+        {
+            QCoreApplication app(argc, argv);
+            Hooks::installHooks();
+            QVERIFY(!Probe::isInitialized());
+
+            std::vector<std::unique_ptr<QObject>> objects;
+            for (int i = 0; i < 6; ++i)
+                objects.push_back(std::make_unique<QObject>());
+            delete new QObject; // a temporary right after the others
+            std::vector<QObject *> destroyed;
+            for (int i : { 0, 3, 5 }) { // the oldest, one in the middle, and the newest
+                destroyed.push_back(objects[i].get());
+                objects[i].reset();
+            }
+
+            createProbe();
+            for (const auto &obj : objects) {
+                if (obj)
+                    QVERIFY(Probe::instance()->isValidObject(obj.get()));
+            }
+            for (auto obj : destroyed)
+                QVERIFY(!Probe::instance()->isValidObject(obj));
+        }
+        QVERIFY(!Probe::instance());
+    }
+
+    // handlers of a delayed reparent can queue further reparents, which must not get lost
+    void reparentFromDelayedReparent()
+    {
+        {
+            QCoreApplication app(argc, argv);
+            createProbe();
+            auto treeModel = Probe::instance()->objectTreeModel();
+            const auto find = [treeModel](QObject *obj) {
+                return treeModel->match(treeModel->index(0, 0), ObjectModel::ObjectRole, QVariant::fromValue(obj), 1,
+                                        Qt::MatchExactly | Qt::MatchRecursive)
+                    .value(0);
+            };
+
+            QObject obj1;
+            QObject obj2;
+            QTRY_VERIFY(find(&obj1).isValid() && find(&obj2).isValid());
+
+            QObject *parent1 = nullptr;
+            QObject *parent2 = nullptr;
+            {
+                ProbeGuard guard; // not known to the probe yet, so the reparents are delayed
+                parent1 = new QObject;
+                parent2 = new QObject;
+            }
+
+            bool reparented = false;
+            connect(Probe::instance(), &Probe::objectReparented, this, [&](QObject *obj) {
+                if (obj == &obj1 && !reparented) {
+                    reparented = true;
+                    obj2.setParent(parent2);
+                }
+            });
+
+            obj1.setParent(parent1);
+            QTRY_VERIFY(reparented);
+            QTRY_COMPARE(find(&obj2).parent(), find(parent2));
+            QCOMPARE(find(&obj1).parent(), find(parent1));
+
+            obj1.setParent(nullptr);
+            obj2.setParent(nullptr);
+            delete parent1;
+            delete parent2;
         }
         QVERIFY(!Probe::instance());
     }

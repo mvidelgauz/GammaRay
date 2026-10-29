@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -32,11 +32,11 @@ QVariant ClientActionModel::data(const QModelIndex &index, int role) const
         return index.sibling(index.row(), ActionModel::AddressColumn).data(ActionModel::ObjectIdRole);
     } else if (role == Qt::DecorationRole && index.column() == ActionModel::ShortcutsPropColumn) {
         const auto v = index.data(ActionModel::ShortcutConflictRole);
-        const auto b = v.type() == QVariant::Bool ? v.toBool() : false;
+        const auto b = v.typeId() == QMetaType::Bool ? v.toBool() : false;
         return b ? qApp->style()->standardIcon(QStyle::SP_MessageBoxWarning) : QVariant();
     } else if (role == Qt::ToolTipRole && index.column() == ActionModel::ShortcutsPropColumn) {
         const auto v = index.data(ActionModel::ShortcutConflictRole);
-        const auto b = v.type() == QVariant::Bool ? v.toBool() : false;
+        const auto b = v.typeId() == QMetaType::Bool ? v.toBool() : false;
         return b ? tr("Warning: Ambiguous shortcut detected.") : QVariant();
     }
     return QIdentityProxyModel::data(index, role);

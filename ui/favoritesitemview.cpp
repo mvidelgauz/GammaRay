@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Waqar Ahmed <waqar.ahmed@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -29,9 +29,7 @@ void ObjectsFavoriteView::setModel(QAbstractItemModel *model)
     // However, this makes things super slow
 
     auto proxyModel1 = static_cast<FavoritesModel *>(model);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     proxyModel1->setRecursiveFilteringEnabled(true);
-#endif
 
     auto flatteningModel = new KDescendantsProxyModel(this);
     flatteningModel->setSourceModel(proxyModel1);

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Anton Kreuzkamp <anton.kreuzkamp@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -18,16 +18,24 @@
 
 #include <common/objectbroker.h>
 
-#include <3rdparty/qt/modeltest.h>
-
+#include <QAbstractItemModelTester>
 #include <QAbstractItemModel>
 #include <QAction>
 #include <QSignalSpy>
 #include <QWidget>
 
+#include <algorithm>
+
 using namespace GammaRay;
 
 Q_DECLARE_METATYPE(QVector<GammaRay::ToolInfo>)
+
+class TestAction : public QAction
+{
+    Q_OBJECT
+public:
+    using QAction::QAction;
+};
 
 class ToolManagerTest : public BaseProbeTest
 {
@@ -121,10 +129,26 @@ private slots:
         QVERIFY(supportedToolIds.contains(QStringLiteral("gammaray_actioninspector")));
     }
 
+    // the tool for a class is enabled by an object of a subclass, also when other base classes of
+    // that are known already
+    void testToolForBaseClass()
+    {
+        auto *toolManager = ObjectBroker::object<ToolManagerInterface *>();
+        QVERIFY(toolManager);
+        QSignalSpy toolEnabledSpy(toolManager, &ToolManagerInterface::toolEnabled);
+
+        QObject object; // QObject is known first
+        QTest::qWait(1);
+        TestAction action(QStringLiteral("Test Action"), this);
+        QTRY_VERIFY(std::any_of(toolEnabledSpy.cbegin(), toolEnabledSpy.cend(), [](const QList<QVariant> &args) {
+            return args.first().toString() == QLatin1String("gammaray_actioninspector");
+        }));
+    }
+
     void testClientSide()
     {
         ClientToolManager::instance()->requestAvailableTools();
-        ModelTest modelTest(ClientToolManager::instance()->model());
+        QAbstractItemModelTester modelTest(ClientToolManager::instance()->model());
 
         // we're testing inprocess, thus tool list should be available instantly.
         QVERIFY(ClientToolManager::instance()->isToolListLoaded());

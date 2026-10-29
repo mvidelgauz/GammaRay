@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2014-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2014 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -45,7 +45,7 @@ int ProbeABIModel::rowCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
         return 0;
-    return m_abis.count();
+    return m_abis.size();
 }
 
 int ProbeABIModel::indexOfBestMatchingABI(const ProbeABI &targetABI) const
@@ -55,4 +55,9 @@ int ProbeABIModel::indexOfBestMatchingABI(const ProbeABI &targetABI) const
 
     const ProbeABI bestMatchingABI = ProbeFinder::findBestMatchingABI(targetABI, m_abis);
     return m_abis.indexOf(bestMatchingABI);
+}
+
+QVector<ProbeABI> ProbeABIModel::abis() const
+{
+    return m_abis;
 }

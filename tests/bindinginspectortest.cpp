@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2015-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2015 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -30,8 +30,6 @@
 #include <plugins/qmlsupport/qmlbindingprovider.h>
 #include <plugins/quickinspector/quickimplicitbindingdependencyprovider.h>
 
-#include <3rdparty/qt/modeltest.h>
-
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -39,6 +37,7 @@
 #include <private/qquickrectangle_p.h>
 
 #include <QDebug>
+#include <QAbstractItemModelTester>
 #include <QTest>
 #include <QObject>
 #include <QThread>
@@ -218,28 +217,23 @@ private slots:
     void init();
     void cleanup();
     void testMockProvider();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     static void testQmlBindingProvider_data();
     static void testQmlBindingProvider();
-#endif
-#if QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
     static void testQtQuickProvider_data();
     static void testQtQuickProvider();
-#endif
     void testModel();
+    void testSelectSameObjectAgain();
     void testModelDataChanged();
     void testModelAdditions();
     void testModelInsertions();
     void testModelRemovalAtEnd();
     void testModelRemovalInside();
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
     void testIntegration();
-#endif
 
 private:
     MockBindingProvider *provider;
     BindingExtension *bindingExtension;
-    std::unique_ptr<ModelTest> modelTest;
+    std::unique_ptr<QAbstractItemModelTester> modelTest;
     QAbstractItemModel *bindingModel;
 };
 
@@ -255,7 +249,7 @@ void BindingInspectorTest::initTestCase()
     QVERIFY(bindingExtension);
     bindingModel = bindingExtension->model();
     QVERIFY(bindingModel);
-    modelTest.reset(new ModelTest(bindingModel));
+    modelTest.reset(new QAbstractItemModelTester(bindingModel));
 }
 
 void BindingInspectorTest::init()
@@ -320,7 +314,6 @@ void BindingInspectorTest::testMockProvider()
     QCOMPARE(dependency3->cachedValue().toBool(), false);
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
 void BindingInspectorTest::testQmlBindingProvider_data()
 {
     QTest::addColumn<QByteArray>("code");
@@ -434,9 +427,7 @@ void BindingInspectorTest::testQmlBindingProvider()
 
     delete rect;
 }
-#endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
 void BindingInspectorTest::testQtQuickProvider_data()
 {
     QTest::addColumn<QByteArray>("code", nullptr);
@@ -548,7 +539,32 @@ void BindingInspectorTest::testQtQuickProvider()
 
     delete rect;
 }
-#endif
+
+// selecting an object again, e.g. through "navigate to", must not free the nodes the model shows
+void BindingInspectorTest::testSelectSameObjectAgain()
+{
+    MockObject obj1 { 53, true, 'x', 5.3, "Hello World" };
+    MockObject obj2 { 35, false, 'y', 3.5, "Bye, World" };
+    provider->data = { {
+        { &obj1, "c", &obj1, "b" },
+        { &obj1, "c", &obj2, "d" },
+    } };
+
+    bindingExtension->setQObject(&obj1);
+    QCOMPARE(bindingModel->rowCount(), 1);
+    const QPersistentModelIndex index = bindingModel->index(0, 0);
+    QCOMPARE(index.data().toString(), QStringLiteral("c"));
+
+    bindingExtension->setQObject(&obj1);
+    // either the model was reset, or the index still refers to the node the model has there
+    if (index.isValid()) {
+        QCOMPARE(index.internalPointer(), bindingModel->index(index.row(), 0).internalPointer());
+        QCOMPARE(index.data().toString(), QStringLiteral("c"));
+    }
+    QCOMPARE(bindingModel->rowCount(), 1);
+    QCOMPARE(bindingModel->rowCount(bindingModel->index(0, 0)), 2);
+    bindingExtension->setQObject(nullptr);
+}
 
 void BindingInspectorTest::testModel()
 {
@@ -925,7 +941,6 @@ void BindingInspectorTest::testModelRemovalInside()
     QCOMPARE(dataChangedSpy.at(1).at(1).toModelIndex(), obj1aIndex.sibling(obj1aIndex.row(), BindingModel::DepthColumn));
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
 void BindingInspectorTest::testIntegration()
 {
     createProbe();
@@ -956,7 +971,7 @@ void BindingInspectorTest::testIntegration()
 
     QAbstractItemModel *bindingModel = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.ObjectInspector.bindingModel"));
     QVERIFY(bindingModel);
-    ModelTest modelTest(bindingModel);
+    QAbstractItemModelTester modelTest(bindingModel);
 
     Probe::instance()->selectObject(text);
     QCOMPARE(bindingModel->rowCount(), 6);
@@ -1069,7 +1084,6 @@ void BindingInspectorTest::testIntegration()
     delete rect;
     QTRY_VERIFY(bindingModel->rowCount() == 0);
 }
-#endif
 
 QTEST_MAIN(BindingInspectorTest)
 

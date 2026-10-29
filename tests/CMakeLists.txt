@@ -1,11 +1,12 @@
 # This file is part of GammaRay, the Qt application inspection and manipulation tool.
 #
-# SPDX-FileCopyrightText: 2011-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+# SPDX-FileCopyrightText: 2011 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Contact KDAB at <info@kdab.com> for commercial licensing options.
 #
+
 # keep test output locally, in the multibuild case
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIB_INSTALL_DIR})
@@ -13,16 +14,9 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIB_INSTALL_DIR})
 configure_file(gammaray-test-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/gammaray-test-config.h)
 
 # create intermediate modeltestobj object files which unit tests can use
-if(QtTest_VERSION VERSION_LESS 5.11)
-    add_library(modeltestobj OBJECT ${CMAKE_SOURCE_DIR}/3rdparty/qt/modeltest.cpp)
-    set_target_properties(modeltestobj PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_compile_features(modeltestobj PUBLIC ${GAMMARAY_REQUIRED_CXX_FEATURES})
-    target_compile_definitions(modeltestobj PRIVATE $<TARGET_PROPERTY:Qt5::Core,INTERFACE_COMPILE_DEFINITIONS>
-    )# for -DQT_NAMESPACE=...
-    target_include_directories(modeltestobj PUBLIC $<TARGET_PROPERTY:Qt5::Core,INTERFACE_INCLUDE_DIRECTORIES>)
-else()
-    add_library(modeltestobj OBJECT)
-endif()
+add_library(
+    modeltestobj OBJECT
+)
 
 # create intermediate test_helpers_obj object files which unit tests can use
 add_library(
@@ -36,7 +30,7 @@ target_compile_definitions(
                              $<TARGET_PROPERTY:Qt${QtTest_VERSION_MAJOR}::Test,INTERFACE_COMPILE_DEFINITIONS>
 ) # for -DQT_NAMESPACE=...
 target_include_directories(
-    test_helpers_obj
+    test_helpers_obj SYSTEM
     PUBLIC $<TARGET_PROPERTY:Qt${QtCore_VERSION_MAJOR}::Core,INTERFACE_INCLUDE_DIRECTORIES>
            $<TARGET_PROPERTY:Qt${QtTest_VERSION_MAJOR}::Test,INTERFACE_INCLUDE_DIRECTORIES>
 )
@@ -55,8 +49,9 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
                                     $<TARGET_PROPERTY:Qt${QtTest_VERSION_MAJOR}::Test,INTERFACE_COMPILE_DEFINITIONS>
     ) # for -DQT_NAMESPACE=...
     target_include_directories(
-        base_probe_test_obj PUBLIC $<TARGET_PROPERTY:Qt${QtCore_VERSION_MAJOR}::Core,INTERFACE_INCLUDE_DIRECTORIES>
-                                   $<TARGET_PROPERTY:Qt${QtTest_VERSION_MAJOR}::Test,INTERFACE_INCLUDE_DIRECTORIES>
+        base_probe_test_obj SYSTEM
+        PUBLIC $<TARGET_PROPERTY:Qt${QtCore_VERSION_MAJOR}::Core,INTERFACE_INCLUDE_DIRECTORIES>
+               $<TARGET_PROPERTY:Qt${QtTest_VERSION_MAJOR}::Test,INTERFACE_INCLUDE_DIRECTORIES>
     )
 
     if(TARGET Qt::Quick)
@@ -74,7 +69,7 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
             base_quick_test_obj PUBLIC $<TARGET_PROPERTY:base_probe_test_obj,INTERFACE_INCLUDE_DIRECTORIES>
         )
         target_include_directories(
-            base_quick_test_obj
+            base_quick_test_obj SYSTEM
             PUBLIC $<TARGET_PROPERTY:Qt${QtQuick_VERSION_MAJOR}::Quick,INTERFACE_INCLUDE_DIRECTORIES>
         )
     endif()
@@ -152,7 +147,7 @@ endif()
 
 add_executable(
     attachhelper
-    attachhelper.cpp
+    attachhelper.cpp attachhelper.h
 )
 gammaray_set_rpath(attachhelper ${BIN_INSTALL_DIR})
 
@@ -179,32 +174,35 @@ elseif(WIN32)
     list(APPEND INJECTOR_TYPES windll style)
 endif()
 
-foreach(injectorType ${INJECTOR_TYPES})
-    add_test(
-        connectiontest-${injectorType}
-        ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR}/gammaray
-        --inprocess
-        --listen
-        tcp://127.0.0.1
-        -unittest
-        -i
-        ${injectorType}
-        ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR}/connectiontest
-    )
-    add_test(
-        connectiontest-${injectorType}-filter
-        ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR}/gammaray
-        --inprocess
-        -unittest
-        --listen
-        tcp://127.0.0.1
-        -filtertest
-        -i
-        ${injectorType}
-        ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR}/connectiontest
-    )
-    set_tests_properties(connectiontest-${injectorType}-filter PROPERTIES ENVIRONMENT GAMMARAY_TEST_FILTER=1)
-endforeach()
+if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
+    # No probes are available in client only build
+    foreach(injectorType ${INJECTOR_TYPES})
+        add_test(
+            connectiontest-${injectorType}
+            ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR}/gammaray
+            --inprocess
+            --listen
+            tcp://127.0.0.1
+            -unittest
+            -i
+            ${injectorType}
+            ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR}/connectiontest
+        )
+        add_test(
+            connectiontest-${injectorType}-filter
+            ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR}/gammaray
+            --inprocess
+            -unittest
+            --listen
+            tcp://127.0.0.1
+            -filtertest
+            -i
+            ${injectorType}
+            ${PROJECT_BINARY_DIR}/${BIN_INSTALL_DIR}/connectiontest
+        )
+        set_tests_properties(connectiontest-${injectorType}-filter PROPERTIES ENVIRONMENT GAMMARAY_TEST_FILTER=1)
+    endforeach()
+endif()
 
 #
 # common and core unit tests
@@ -231,7 +229,7 @@ target_link_libraries(
 
 gammaray_add_test(metaobjecttest metaobjecttest.cpp)
 target_link_libraries(
-    metaobjecttest gammaray_core
+    metaobjecttest Qt::CorePrivate gammaray_core
 )
 
 if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
@@ -257,7 +255,11 @@ target_link_libraries(
 
 gammaray_add_test(propertyadaptortest propertyadaptortest.cpp)
 target_link_libraries(
-    propertyadaptortest gammaray_core Qt::Gui gammaray_shared_test_data
+    propertyadaptortest
+    gammaray_core
+    Qt::Gui
+    Qt::CorePrivate
+    gammaray_shared_test_data
 )
 
 if(HAVE_QT_WIDGETS)
@@ -297,7 +299,13 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
     gammaray_add_probe_test(signalspycallbacktest signalspycallbacktest.cpp)
     target_link_libraries(signalspycallbacktest gammaray_core)
     gammaray_add_probe_test(integrationtest integrationtest.cpp)
-    target_link_libraries(integrationtest gammaray_core)
+    target_link_libraries(integrationtest gammaray_core Qt::CorePrivate)
+    gammaray_add_probe_test(probetest probetest.cpp)
+    target_link_libraries(probetest gammaray_core)
+    gammaray_add_probe_test(objectmodeltest objectmodeltest.cpp $<TARGET_OBJECTS:modeltestobj>)
+    target_link_libraries(objectmodeltest gammaray_core)
+    gammaray_add_probe_test(selectionmodelservertest selectionmodelservertest.cpp)
+    target_link_libraries(selectionmodelservertest gammaray_core Qt::Gui)
 endif()
 
 if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
@@ -402,10 +410,35 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD AND NOT GAMMARAY_PROBE_ONLY_BUILD)
         Qt::Gui
     )
 
+    gammaray_add_test(serverproxymodeltest serverproxymodeltest.cpp $<TARGET_OBJECTS:modeltestobj>)
+    target_link_libraries(serverproxymodeltest gammaray_core Qt::Gui)
+
+    gammaray_add_test(
+        loggingcategorymodeltest loggingcategorymodeltest.cpp $<TARGET_OBJECTS:modeltestobj>
+        ../core/tools/messagehandler/loggingcategorymodel.cpp
+    )
+    target_link_libraries(loggingcategorymodeltest gammaray_core)
+
+    gammaray_add_test(
+        paintbuffermodeltest paintbuffermodeltest.cpp $<TARGET_OBJECTS:modeltestobj> ../core/paintbuffermodel.cpp
+    )
+    target_link_libraries(paintbuffermodeltest gammaray_core Qt::Gui Qt::GuiPrivate)
+    target_include_directories(paintbuffermodeltest PRIVATE ${CMAKE_SOURCE_DIR}/3rdparty/qt/5.5/)
+
     if(GAMMARAY_BUILD_UI)
         gammaray_add_test(launcheruiiptest launcheruiiptest.cpp)
         target_link_libraries(
             launcheruiiptest
+            gammaray_launcher_ui
+            gammaray_common
+            Qt::Gui
+            Qt::Widgets
+            Qt::Network
+        )
+
+        gammaray_add_test(launcheruiprocesslisttest launcheruiprocesslisttest.cpp)
+        target_link_libraries(
+            launcheruiprocesslisttest
             gammaray_launcher_ui
             gammaray_common
             Qt::Gui
@@ -443,14 +476,6 @@ gammaray_add_test(
 target_link_libraries(
     fontdatabasemodeltest Qt::Gui
 )
-
-if(TARGET Qt5::Core)
-    gammaray_add_test(
-        codecmodeltest codecmodeltest.cpp ${CMAKE_SOURCE_DIR}/plugins/codecbrowser/codecmodel.cpp
-        $<TARGET_OBJECTS:modeltestobj>
-    )
-    target_link_libraries(codecmodeltest Qt::Gui)
-endif()
 
 if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
     #does not work unless the translations are installed in QT_INSTALL_TRANSLATIONS
@@ -494,16 +519,14 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
         target_link_libraries(qmlsupporttest gammaray_core Qt::Quick Qt::QmlPrivate)
     endif()
 
-    if(TARGET Qt::Quick AND NOT QtQuick_VERSION VERSION_LESS 5.7) # requires MSVC 2013 or higher
+    if(TARGET Qt::Quick)
         gammaray_add_quick_test(bindinginspectortest bindinginspectortest.cpp $<TARGET_OBJECTS:modeltestobj>)
         target_link_libraries(bindinginspectortest gammaray_core Qt::Quick Qt::QuickPrivate)
         target_sources(
             bindinginspectortest
             PUBLIC ${CMAKE_SOURCE_DIR}/plugins/quickinspector/quickimplicitbindingdependencyprovider.cpp
         )
-        if(NOT QtQml_VERSION VERSION_LESS 5.10)
-            target_sources(bindinginspectortest PUBLIC ${CMAKE_SOURCE_DIR}/plugins/qmlsupport/qmlbindingprovider.cpp)
-        endif()
+        target_sources(bindinginspectortest PUBLIC ${CMAKE_SOURCE_DIR}/plugins/qmlsupport/qmlbindingprovider.cpp)
     endif()
 
     if(TARGET Qt::Quick)
@@ -519,7 +542,7 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
         )
 
         # only opengl rhi backend is supported atm
-        if(TARGET Qt6::Quick)
+        if(${QT_VERSION_MAJOR} EQUAL 6 AND TARGET Qt6::Quick)
             set_tests_properties(
                 quickinspectortest PROPERTIES ENVIRONMENT "QT_QUICK_BACKEND=rhi;QSG_RHI_BACKEND=opengl"
             )
@@ -529,24 +552,47 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
             quickinspectortest2 quickinspectortest2.cpp quickinspectortest.qrc $<TARGET_OBJECTS:modeltestobj>
         )
         target_link_libraries(quickinspectortest2 gammaray_core gammaray_quickinspector_shared Qt::Quick)
-        if(TARGET Qt6::Quick)
+        if(${QT_VERSION_MAJOR} EQUAL 6 AND TARGET Qt6::Quick)
             set_tests_properties(
                 quickinspectortest2 PROPERTIES ENVIRONMENT "QT_QUICK_BACKEND=rhi;QSG_RHI_BACKEND=opengl"
             )
         endif()
 
-        # sw renderer support is only available in Qt 5.9.3 or newer
-        if(NOT QtQuick_VERSION VERSION_LESS 5.9.3)
-            add_test(NAME quickinspectortest2_softwarecontext COMMAND quickinspectortest2)
-            set_tests_properties(
-                quickinspectortest2_softwarecontext PROPERTIES ENVIRONMENT "QT_QUICK_BACKEND=softwarecontext"
-            )
+        gammaray_add_test(
+            quickscenegraphmodeltest
+            quickscenegraphmodeltest.cpp
+            quickinspectortest.qrc
+            ../plugins/quickinspector/quickscenegraphmodel.cpp
+            ../plugins/quickinspector/quickscenegraphmodel.h
+            $<TARGET_OBJECTS:modeltestobj>
+        )
+        target_link_libraries(quickscenegraphmodeltest gammaray_core Qt::Quick Qt::QuickPrivate)
 
-            add_test(NAME quickinspectortest_softwarecontext COMMAND quickinspectortest)
-            set_tests_properties(
-                quickinspectortest_softwarecontext PROPERTIES ENVIRONMENT "QT_QUICK_BACKEND=softwarecontext"
-            )
-        endif()
+        # not using gammaray_add_test(), a fixed number of iterations makes it run quickly as a test
+        add_executable(
+            quickscenegraphmodelbench ../plugins/quickinspector/quickscenegraphmodel.cpp
+                                      ../plugins/quickinspector/quickscenegraphmodel.h quickscenegraphmodelbench.cpp
+        )
+        gammaray_set_rpath(quickscenegraphmodelbench ${BIN_INSTALL_DIR})
+        target_link_libraries(
+            quickscenegraphmodelbench
+            gammaray_core
+            Qt::Test
+            Qt::Quick
+            Qt::QuickPrivate
+        )
+        add_test(NAME quickscenegraphmodelbench COMMAND quickscenegraphmodelbench -iterations 1)
+
+        # sw renderer support is only available in Qt 5.9.3 or newer
+        add_test(NAME quickinspectortest2_softwarecontext COMMAND quickinspectortest2)
+        set_tests_properties(
+            quickinspectortest2_softwarecontext PROPERTIES ENVIRONMENT "QT_QUICK_BACKEND=softwarecontext"
+        )
+
+        add_test(NAME quickinspectortest_softwarecontext COMMAND quickinspectortest)
+        set_tests_properties(
+            quickinspectortest_softwarecontext PROPERTIES ENVIRONMENT "QT_QUICK_BACKEND=softwarecontext"
+        )
 
         gammaray_add_quick_test(
             quickinspectorpickingtest quickinspectorpickingtest.cpp quickinspectortest.qrc
@@ -565,50 +611,29 @@ if(NOT GAMMARAY_CLIENT_ONLY_BUILD)
         gammaray_add_quick_test(
             quickmaterialtest quickmaterialtest.cpp quickinspectortest.qrc $<TARGET_OBJECTS:modeltestobj>
         )
-        if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-            find_package(Qt6 COMPONENTS ShaderTools)
-            qt6_add_shaders(
-                quicktexturetest
-                "quicktexturetest_shaders"
-                PREFIX
-                "/"
-                FILES
-                "manual/shadereffect.vert"
-                "manual/shadereffect.frag"
-            )
-            qt6_add_shaders(
-                quickmaterialtest
-                "quickmaterialtest_shaders"
-                PREFIX
-                "/"
-                FILES
-                "manual/shadereffect.vert"
-                "manual/shadereffect.frag"
-            )
+        if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+            find_package(Qt6ShaderTools)
+            if(Qt6ShaderTools_FOUND)
+                qt6_add_shaders(
+                    quicktexturetest
+                    "quicktexturetest_shaders"
+                    PREFIX
+                    "/"
+                    FILES
+                    "manual/shadereffect.vert"
+                    "manual/shadereffect.frag"
+                )
+                qt6_add_shaders(
+                    quickmaterialtest
+                    "quickmaterialtest_shaders"
+                    PREFIX
+                    "/"
+                    FILES
+                    "manual/shadereffect.vert"
+                    "manual/shadereffect.frag"
+                )
+            endif()
         endif()
         target_link_libraries(quickmaterialtest gammaray_core Qt::Quick Qt::QuickPrivate)
-    endif()
-
-    if(TARGET Qt::IviCore
-       AND TARGET Qt::IviVehicleFunctions
-       AND QtIviCore_VERSION VERSION_LESS 1.2
-    )
-        gammaray_add_probe_test(
-            qtivipropertymodeltest
-            qtivipropertymodeltest.cpp
-            ../plugins/qtivi/qtivipropertyoverrider.cpp
-            ../plugins/qtivi/qtivipropertymodel.cpp
-            $<TARGET_OBJECTS:modeltestobj>
-        )
-        target_link_libraries(
-            qtivipropertymodeltest
-            Qt::Gui
-            Qt::IviCore
-            Qt::IviVehicleFunctions
-            Qt::IviCorePrivate
-        )
-        if(TARGET Qt::IviMedia)
-            target_link_libraries(qtivipropertymodeltest Qt::IviMedia)
-        endif()
     endif()
 endif()

@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Filipe Azevedo <filipe.azevedo@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -43,8 +43,7 @@ HeaderView::HeaderView(Qt::Orientation orientation, QWidget *parent)
 // keep it working in UBSAN
 __attribute__((no_sanitize("vptr")))
 #endif
-bool
-HeaderView::isState(State state) const
+bool HeaderView::isState(State state) const
 {
     QHeaderViewPrivate *d = reinterpret_cast<QHeaderViewPrivate *>(d_ptr.data());
     return d->state == QHeaderViewPrivate::State(state);

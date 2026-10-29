@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2016-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2016 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -27,19 +27,11 @@
 
 #include <common/modelevent.h>
 #include <common/objectbroker.h>
-#include <common/recursiveproxymodelbase.h>
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QBuffer>
 #include <Qt3DCore/QGeometry>
 namespace Qt3DGeometry = Qt3DCore;
-#else
-#include <Qt3DRender/QAttribute>
-#include <Qt3DRender/QBuffer>
-#include <Qt3DRender/QGeometry>
-namespace Qt3DGeometry = Qt3DRender;
-#endif
 
 #include <Qt3DRender/QAbstractTexture>
 #include <Qt3DRender/QAbstractTextureImage>
@@ -56,13 +48,11 @@ namespace Qt3DGeometry = Qt3DRender;
 
 #include <Qt3DInput/QAbstractPhysicalDevice>
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
 #include <Qt3DAnimation/QAnimationClipData>
 #include <Qt3DAnimation/QAnimationController>
 #include <Qt3DAnimation/QAnimationGroup>
 #include <Qt3DAnimation/QChannelMapper>
 #include <Qt3DAnimation/QChannelMapping>
-#endif
 
 #include <Qt3DCore/QAspectEngine>
 #include <Qt3DCore/QComponent>
@@ -71,6 +61,7 @@ namespace Qt3DGeometry = Qt3DRender;
 #include <QDebug>
 #include <QItemSelection>
 #include <QItemSelectionModel>
+#include <QSortFilterProxyModel>
 
 using namespace GammaRay;
 
@@ -106,7 +97,7 @@ Qt3DInspector::Qt3DInspector(Probe *probe, QObject *parent)
     connect(probe, &Probe::objectCreated, m_entityModel, &Qt3DEntityTreeModel::objectCreated);
     connect(probe, &Probe::objectDestroyed, m_entityModel, &Qt3DEntityTreeModel::objectDestroyed);
     connect(probe, &Probe::objectReparented, m_entityModel, &Qt3DEntityTreeModel::objectReparented);
-    auto entityProxy = new ServerProxyModel<RecursiveProxyModelBase>(this);
+    auto entityProxy = new ServerProxyModel<QSortFilterProxyModel>(this);
     entityProxy->setSourceModel(m_entityModel);
     probe->registerModel(QStringLiteral("com.kdab.GammaRay.Qt3DInspector.sceneModel"), entityProxy);
     m_entitySelectionModel = ObjectBroker::selectionModel(entityProxy);
@@ -116,7 +107,7 @@ Qt3DInspector::Qt3DInspector(Probe *probe, QObject *parent)
     connect(probe, &Probe::objectCreated, m_frameGraphModel, &FrameGraphModel::objectCreated);
     connect(probe, &Probe::objectDestroyed, m_frameGraphModel, &FrameGraphModel::objectDestroyed);
     connect(probe, &Probe::objectReparented, m_frameGraphModel, &FrameGraphModel::objectReparented);
-    auto frameGraphProxy = new ServerProxyModel<RecursiveProxyModelBase>(this);
+    auto frameGraphProxy = new ServerProxyModel<QSortFilterProxyModel>(this);
     frameGraphProxy->setSourceModel(m_frameGraphModel);
     probe->registerModel(QStringLiteral(
                              "com.kdab.GammaRay.Qt3DInspector.frameGraphModel"),
@@ -199,7 +190,7 @@ void Qt3DInspector::selectEntity(Qt3DCore::QEntity *entity)
     if (indexList.isEmpty())
         return;
 
-    const auto index = indexList.first();
+    const auto &index = indexList.first();
     m_entitySelectionModel->select(index,
                                    QItemSelectionModel::Select | QItemSelectionModel::Clear | QItemSelectionModel::Rows
                                        | QItemSelectionModel::Current);
@@ -237,7 +228,7 @@ void Qt3DInspector::selectFrameGraphNode(Qt3DRender::QFrameGraphNode *node)
     if (indexList.isEmpty())
         return;
 
-    const auto index = indexList.first();
+    const auto &index = indexList.first();
     m_frameGraphSelectionModel->select(index,
                                        QItemSelectionModel::Select | QItemSelectionModel::Clear | QItemSelectionModel::Rows | QItemSelectionModel::Current);
 }
@@ -259,11 +250,7 @@ void Qt3DInspector::registerCoreMetaTypes()
     MetaObject *mo = nullptr;
     MO_ADD_METAOBJECT1(Qt3DCore::QNode, QObject);
     MO_ADD_PROPERTY_RO(Qt3DCore::QNode, notificationsBlocked);
-#if QT_VERSION < QT_VERSION_CHECK(5, 7, 0)
-    MO_ADD_PROPERTY_RO(Qt3DCore::QNode, childrenNodes);
-#else
     MO_ADD_PROPERTY_RO(Qt3DCore::QNode, childNodes);
-#endif
 
     MO_ADD_METAOBJECT1(Qt3DCore::QComponent, Qt3DCore::QNode);
     MO_ADD_PROPERTY_RO(Qt3DCore::QComponent, entities);
@@ -377,9 +364,7 @@ void Qt3DInspector::registerRenderMetaTypes()
     MO_ADD_PROPERTY_RO(Qt3DRender::QAbstractTexture, textureImages);
 
     MO_ADD_METAOBJECT1(Qt3DRender::QSceneLoader, Qt3DCore::QComponent);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
     MO_ADD_PROPERTY_RO(Qt3DRender::QSceneLoader, entityNames);
-#endif
 
     VariantHandler::registerStringConverter<Qt3DGeometry::QAttribute *>(attributeToString);
     VariantHandler::registerStringConverter<Qt3DRender::QFilterKey *>(filterKeyToString);
@@ -387,7 +372,6 @@ void Qt3DInspector::registerRenderMetaTypes()
     VariantHandler::registerStringConverter<Qt3DRender::QParameter *>(parameterToString);
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
 static QString channelMappingToString(Qt3DAnimation::QChannelMapping *mapping)
 {
     if (!mapping || mapping->channelName().isEmpty() || mapping->property().isEmpty())
@@ -395,11 +379,9 @@ static QString channelMappingToString(Qt3DAnimation::QChannelMapping *mapping)
     return mapping->channelName() + QLatin1String(" -> ") + Util::displayString(mapping->target())
         + QLatin1Char('.') + mapping->property();
 }
-#endif
 
 void Qt3DInspector::registerAnimationMetaTypes()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 9, 0)
     MetaObject *mo = nullptr;
     MO_ADD_METAOBJECT0(Qt3DAnimation::QAnimationClipData);
     MO_ADD_PROPERTY_RO(Qt3DAnimation::QAnimationClipData, channelCount);
@@ -416,7 +398,6 @@ void Qt3DInspector::registerAnimationMetaTypes()
     MO_ADD_PROPERTY_RO(Qt3DAnimation::QChannelMapper, mappings);
 
     VariantHandler::registerStringConverter<Qt3DAnimation::QChannelMapping *>(channelMappingToString);
-#endif
 }
 
 void Qt3DInspector::registerExtensions()

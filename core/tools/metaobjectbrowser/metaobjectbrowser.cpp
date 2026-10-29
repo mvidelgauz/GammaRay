@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2010-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2010 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Kevin Funk <kevin.funk@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -24,9 +24,9 @@
 #include <common/objectbroker.h>
 #include <common/metatypedeclarations.h>
 #include <common/tools/metaobjectbrowser/qmetaobjectmodel.h>
-#include <common/recursiveproxymodelbase.h>
 
 #include <QDebug>
+#include <QSortFilterProxyModel>
 #include <QItemSelectionModel>
 
 using namespace GammaRay;
@@ -37,7 +37,7 @@ MetaObjectBrowser::MetaObjectBrowser(Probe *probe, QObject *parent)
     , m_motm(new MetaObjectTreeModel(this))
     , m_model(nullptr)
 {
-    auto model = new ServerProxyModel<RecursiveProxyModelBase>(this);
+    auto model = new ServerProxyModel<QSortFilterProxyModel>(this);
     model->addRole(QMetaObjectModel::MetaObjectIssues);
     model->addRole(QMetaObjectModel::MetaObjectInvalid);
     model->setSourceModel(m_motm);

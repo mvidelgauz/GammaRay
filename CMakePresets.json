@@ -2,27 +2,24 @@
     "version": 2,
     "configurePresets": [
         {
-            "name": "dev",
-            "displayName": "dev",
+            "name": "base",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-dev",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build-${presetName}",
             "cacheVariables": {
-                "QT_VERSION_MAJOR": "5",
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "GAMMARAY_USE_PCH": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            },
+            "warnings": {
+                "uninitialized": true
             }
         },
         {
-            "name": "dev6",
-            "displayName": "dev qt6",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-dev-qt6",
+            "name": "dev",
+            "inherits": "base",
+            "displayName": "dev",
             "cacheVariables": {
-                "QT_VERSION_MAJOR": "6",
-                "GAMMARAY_USE_PCH": "ON",
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_BUILD_TYPE": "Release",
+                "GAMMARAY_USE_PCH": "ON"
             }
         },
         {
@@ -31,33 +28,30 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build-dev-asan",
             "cacheVariables": {
-                "QT_VERSION_MAJOR": "5",
                 "ECM_ENABLE_SANITIZERS": "address,undefined",
                 "CMAKE_BUILD_TYPE": "Debug",
                 "GAMMARAY_USE_PCH": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "QT_NO_ADD_SANITIZER_OPTIONS": "ON"
             }
         },
         {
-            "name": "dev-asan6",
-            "displayName": "dev-asan qt6",
+            "name": "dev-tsan",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-dev-asan6",
+            "binaryDir": "${sourceDir}/build-dev-tsan",
             "cacheVariables": {
-                "ECM_ENABLE_SANITIZERS": "address,undefined",
+                "ECM_ENABLE_SANITIZERS": "thread",
                 "CMAKE_BUILD_TYPE": "Debug",
                 "GAMMARAY_USE_PCH": "ON",
-                "QT_VERSION_MAJOR": "6",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "QT_NO_ADD_SANITIZER_OPTIONS": "ON"
             }
         },
         {
             "name": "dev-ftime-trace",
             "displayName": "dev-ftime-trace",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-dev-ftime-trace",
+            "inherits": "base",
             "cacheVariables": {
-                "QT_VERSION_MAJOR": "5",
                 "CMAKE_BUILD_TYPE": "Debug",
                 "GAMMARAY_USE_PCH": "ON",
                 "CMAKE_C_FLAGS_INIT": "-ftime-trace",
@@ -72,28 +66,10 @@
         {
             "name": "dev-clang",
             "displayName": "dev-clang",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-dev-clang",
-            "cacheVariables": {
-                "QT_VERSION_MAJOR": "5",
-                "CMAKE_BUILD_TYPE": "Debug",
-                "GAMMARAY_USE_PCH": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-            },
-            "environment": {
-                "CXX": "clang++",
-                "CCACHE_DISABLE": "ON"
-            }
-        },
-        {
-            "name": "dev-clang6",
-            "displayName": "dev-clang qt6",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-dev-clang6",
+            "inherits": "base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "GAMMARAY_USE_PCH": "ON",
-                "QT_VERSION_MAJOR": "6"
+                "GAMMARAY_USE_PCH": "ON"
             },
             "environment": {
                 "CXX": "clang++",
@@ -103,10 +79,8 @@
         {
             "name": "clazy",
             "displayName": "clazy",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-clazy",
+            "inherits": "base",
             "cacheVariables": {
-                "QT_VERSION_MAJOR": "5",
                 "CMAKE_BUILD_TYPE": "Debug"
             },
             "environment": {
@@ -115,18 +89,78 @@
             }
         },
         {
-            "name": "clazy6",
-            "displayName": "clazy",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-clazy6",
+            "name": "ci-dev-client-only",
+            "inherits": "dev",
+            "displayName": "ci-dev-client-only",
+            "description": "Qt6 client-only build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "QT_VERSION_MAJOR": "6"
-            },
-            "environment": {
-                "CXX": "clazy",
-                "CCACHE_DISABLE": "ON"
+                "GAMMARAY_CLIENT_ONLY_BUILD": "ON",
+                "GAMMARAY_INSTALL_QT_LAYOUT": "ON",
+                "GAMMARAY_MULTI_BUILD": "OFF",
+                "WARNINGS_ARE_ERRORS": "ON"
             }
+        },
+        {
+            "name": "ci-dev-client-and-ui",
+            "inherits": "dev",
+            "displayName": "ci-dev-client-and-ui",
+            "description": "Qt6 client and ui build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "GAMMARAY_CLIENT_ONLY_BUILD": "OFF",
+                "GAMMARAY_INSTALL_QT_LAYOUT": "ON",
+                "GAMMARAY_MULTI_BUILD": "OFF",
+                "WARNINGS_ARE_ERRORS": "ON"
+            }
+        },
+        {
+            "name": "ci-dev-probe-only",
+            "inherits": "dev",
+            "description": "Qt6 PROBE_ONLY build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "GAMMARAY_PROBE_ONLY_BUILD": "ON",
+                "GAMMARAY_INSTALL_QT_LAYOUT": "ON",
+                "GAMMARAY_BUILD_UI": "OFF",
+                "GAMMARAY_BUILD_DOCS": "OFF",
+                "GAMMARAY_MULTI_BUILD": "OFF",
+                "WARNINGS_ARE_ERRORS": "ON"
+            }
+        },
+        {
+            "name": "ci-dev-clang-tidy",
+            "displayName": "ci-dev-clang-tidy",
+            "description": "Qt6 clang-tidy build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_CLANG_TIDY": "clang-tidy",
+                "ECM_ENABLE_SANITIZERS": "address",
+                "GAMMARAY_BUILD_DOCS": "OFF",
+                "GAMMARAY_MULTI_BUILD": "OFF",
+                "GAMMARAY_DISABLE_FEEDBACK": "ON",
+                "GAMMARAY_USE_PCH": "OFF"
+            },
+            "inherits": [
+                "dev"
+            ]
+        },
+        {
+            "name": "ci-dev-clazy",
+            "displayName": "ci-dev-clazy",
+            "description": "Qt6 clazy build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_COMPILER": "clazy",
+                "ECM_ENABLE_SANITIZERS": "address",
+                "GAMMARAY_BUILD_DOCS": "ON",
+                "GAMMARAY_MULTI_BUILD": "ON",
+                "GAMMARAY_DISABLE_FEEDBACK": "ON",
+                "GAMMARAY_USE_PCH": "OFF"
+            },
+            "inherits": [
+                "dev"
+            ]
         }
     ],
     "buildPresets": [
@@ -135,10 +169,7 @@
             "configurePreset": "dev",
             "targets": [
                 "all"
-            ],
-            "cacheVariables": {
-                "QT_VERSION_MAJOR": "5"
-            }
+            ]
         },
         {
             "name": "clazy",
@@ -146,9 +177,6 @@
             "environment": {
                 "CLAZY_CHECKS": "level2,detaching-member,heap-allocated-small-trivial-type,isempty-vs-count,qstring-varargs,qvariant-template-instantiation,raw-environment-function,reserve-candidates,signal-with-return-value,thread-with-slots,no-ctor-missing-parent-argument,no-missing-typeinfo",
                 "CCACHE_DISABLE": "ON"
-            },
-            "cacheVariables": {
-                "QT_VERSION_MAJOR": "5"
             }
         }
     ]

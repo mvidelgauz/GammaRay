@@ -3,7 +3,7 @@
 
   This file is part of GammaRay, the Qt application inspection and manipulation tool.
 
-  SPDX-FileCopyrightText: 2013-2023 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
+  SPDX-FileCopyrightText: 2013 Klarälvdalens Datakonsult AB, a KDAB Group company <info@kdab.com>
   Author: Volker Krause <volker.krause@kdab.com>
 
   SPDX-License-Identifier: GPL-2.0-or-later
@@ -26,21 +26,8 @@ ProcessInjector::ProcessInjector()
     , mExitStatus(QProcess::NormalExit)
 {
     m_proc.setInputChannelMode(QProcess::ForwardedInputChannel);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     connect(&m_proc, &QProcess::errorOccurred, this, &ProcessInjector::processFailed);
-#else
-    connect(&m_proc, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
-            this, &ProcessInjector::processFailed);
-#endif
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     connect(&m_proc, &QProcess::finished, this, &ProcessInjector::processFinished);
-#elif QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
-    connect(&m_proc, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
-            this, &ProcessInjector::processFinished);
-#else
-    connect(&m_proc, static_cast<void (QProcess::*)(int)>(&QProcess::finished),
-            this, &ProcessInjector::processFinished);
-#endif
     connect(&m_proc, &QProcess::readyReadStandardError, this, &ProcessInjector::readStdErr);
     connect(&m_proc, &QProcess::readyReadStandardOutput, this, &ProcessInjector::readStdOut);
 }
@@ -57,12 +44,7 @@ void ProcessInjector::stop()
 
 void ProcessInjector::stop_impl()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     disconnect(&m_proc, &QProcess::errorOccurred, this, &ProcessInjector::processFailed);
-#else
-    disconnect(&m_proc, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
-               this, &ProcessInjector::processFailed);
-#endif
     if (m_proc.state() != QProcess::Running)
         return;
     m_proc.terminate();
@@ -88,7 +70,7 @@ bool ProcessInjector::launchProcess(const QStringList &programAndArgs,
         // ### TODO properly handle quoted arguments!
         QStringList newArgs = fullWrapperCmd.split(' ');
         newArgs += args;
-        args = newArgs;
+        args = std::move(newArgs);
         qDebug() << "Launching with target wrapper:" << args;
     } else if (env.value(QStringLiteral("GAMMARAY_DEBUG")).compare(QStringLiteral("GDB"), Qt::CaseInsensitive) == 0
                || env.value(QStringLiteral("GAMMARAY_GDB")).toInt()) {
@@ -99,17 +81,17 @@ bool ProcessInjector::launchProcess(const QStringList &programAndArgs,
 #endif
         newArgs << QStringLiteral("--args");
         newArgs += args;
-        args = newArgs;
+        args = std::move(newArgs);
     } else if (env.value(QStringLiteral("GAMMARAY_DEBUG")).compare(QStringLiteral("GDB_NORUN"), Qt::CaseInsensitive) == 0) {
         QStringList newArgs;
         newArgs << QStringLiteral("gdb") << QStringLiteral("--args");
         newArgs += args;
-        args = newArgs;
+        args = std::move(newArgs);
     } else if (env.value(QStringLiteral("GAMMARAY_DEBUG")).compare(QStringLiteral("RR"), Qt::CaseInsensitive) == 0) {
         QStringList newArgs;
         newArgs << QStringLiteral("rr") << QStringLiteral("record");
         newArgs += args;
-        args = newArgs;
+        args = std::move(newArgs);
     }
 
     const QString program = args.takeFirst();
